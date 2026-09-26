@@ -1,0 +1,55 @@
+<!-- Botón flotante -->
+<button
+  class="btn btn-primary rounded-circle chatbot-fab shadow"
+  (click)="alternar()"
+  [attr.aria-label]="abierto() ? 'Cerrar asistente' : 'Abrir asistente'"
+>
+  @if (abierto()) {
+    <i class="bi bi-x-lg"></i>
+  } @else {
+    <i class="bi bi-robot"></i>
+  }
+</button>
+
+<!-- Ventana de chat -->
+@if (abierto()) {
+  <div class="card chatbot-window shadow-lg">
+    <div class="card-header bg-iub text-white d-flex align-items-center">
+      <i class="bi bi-robot me-2"></i>
+      <strong>IUBot — Asistente IA</strong>
+      <span class="badge bg-light text-dark ms-auto">{{ motor() === 'ollama' ? 'LLM local' : 'IA' }}</span>
+    </div>
+    <div class="card-body chatbot-body overflow-auto">
+      @for (msg of mensajes(); track $index) {
+        <div class="mb-2 d-flex flex-column" [class.align-items-end]="msg.autor === 'user'">
+          <div
+            class="px-3 py-2 chat-mensaje-{{ msg.autor }}"
+            style="max-width: 85%; white-space: pre-line"
+          >
+            {{ msg.texto }}
+          </div>
+        </div>
+      }
+      @if (escribiendo()) {
+        <div class="px-3 py-2 chat-mensaje-bot" style="max-width: 85%">
+          <span class="spinner-border spinner-border-sm me-1"></span> Escribiendo...
+        </div>
+      }
+    </div>
+    <div class="card-footer">
+      <div class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Escribe tu pregunta..."
+          [(ngModel)]="texto"
+          (keyup.enter)="enviar()"
+          [disabled]="escribiendo()"
+        >
+        <button class="btn btn-iub" (click)="enviar()" [disabled]="escribiendo() || !texto.trim()">
+          <i class="bi bi-send"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+}

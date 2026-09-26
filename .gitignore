@@ -1,0 +1,31 @@
+# ── Python ─────────────────────────────────────────────
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+
+# ── Entornos / secretos ────────────────────────────────
+.env
+*.env
+
+# ── IDEs ───────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+
+# ── Node / Angular ─────────────────────────────────────
+Frontend-Angular/node_modules/
+Frontend-Angular/dist/
+Frontend-Angular/.angular/
+Frontend-Angular/.vite/
+
+# ── Sistema operativo ──────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs / temporales ──────────────────────────────────
+*.log
+*.tmp

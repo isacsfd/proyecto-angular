@@ -1,0 +1,37 @@
+header{
+    background-color: #1e2640;
+   
+}
+
+nav{
+    background-color: #1e2640;
+}
+
+main{
+    margin-top: 10%;
+}
+
+
+li.nav-item a:hover{
+    border-bottom: 1px solid white;
+    padding: 2%;
+}
+
+
+.image{
+    margin-top: 10%;
+    margin-bottom: 5%;
+    border-radius: 3%;
+    height: 250px;
+    width: 400px;
+    opacity: 80%;
+}
+
+.navbar-nav .nav-item {
+    display: flex;
+    align-items: center;
+  }
+  
+.card{
+    border: none;
+}

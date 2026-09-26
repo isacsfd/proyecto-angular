@@ -1,0 +1,62 @@
+
+.acp{
+    background-color: #1e2640;
+    border: none;
+    
+}
+
+.fondo{
+    background-color: #0f1322;
+}
+
+.c{
+    background-color: #f2c12e;
+    border: none;
+}
+
+.navbar-toggler-icon {
+    filter: invert(1);
+}
+
+.ic{
+    color: #1e2640;
+    margin-left: 94%;
+}
+
+.btn:hover{
+    background-color: #0f1322;
+    color: white;
+}
+
+.table-dark{
+    opacity: .75;
+}
+
+.bur{
+    border: none;
+    color: white;
+}
+
+body {
+    --bs-body-font-family: 'Segoe UI';
+    --bs-body-font-size: 0.956rem; 
+  }
+
+  .card-img-overlay {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), rgba(128, 128, 128, 0));
+  }
+  .card{
+    transition: transform 0.3s ease-in;
+  }
+
+  .card:hover{
+    transform: translateY(-5px);
+  }
+
+
+  
+
+
+
+
+

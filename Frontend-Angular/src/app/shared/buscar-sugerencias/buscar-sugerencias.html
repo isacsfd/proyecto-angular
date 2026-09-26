@@ -1,0 +1,43 @@
+<div class="position-relative sugerencia-caja">
+  <input
+    class="form-control"
+    type="search"
+    [placeholder]="placeholder"
+    [(ngModel)]="termino"
+    (input)="alEscribir()"
+    (focus)="abierto.set(true)"
+    (keydown.escape)="cerrar()"
+    autocomplete="off"
+  >
+  @if (abierto() && hayResultados()) {
+    <div class="sugerencia-menu">
+      @if (librosFiltrados().length > 0) {
+        <div class="sugerencia-grupo">Libros</div>
+        @for (l of librosFiltrados(); track l.ID) {
+          <button type="button" class="sugerencia-item" (mousedown)="seleccionarLibro($event, l)">
+            <i class="bi bi-journal-text me-2"></i>
+            <span class="flex-grow-1">
+              <span class="d-block text-truncate">{{ l.Titulo }}</span>
+              <small class="text-muted d-block text-truncate">{{ l.Autor }} · {{ l.Programa }}</small>
+            </span>
+            <span class="badge" [class.text-bg-danger]="(l.Ejemplar ?? 0) <= 0" [class.text-bg-success]="(l.Ejemplar ?? 0) > 0">
+              {{ l.Ejemplar ?? 0 }}
+            </span>
+          </button>
+        }
+      }
+      @if (mostrarUsuarios && usuariosFiltrados().length > 0) {
+        <div class="sugerencia-grupo">Estudiantes</div>
+        @for (u of usuariosFiltrados(); track u.id) {
+          <button type="button" class="sugerencia-item" (mousedown)="seleccionarUsuario($event, u)">
+            <i class="bi bi-person me-2"></i>
+            <span class="flex-grow-1">
+              <span class="d-block text-truncate">{{ u.nombre }}</span>
+              <small class="text-muted d-block text-truncate">{{ u.identificacion }} · {{ u.rol }}</small>
+            </span>
+          </button>
+        }
+      }
+    </div>
+  }
+</div>

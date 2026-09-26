@@ -1,0 +1,22 @@
+.chatbot-fab {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1500;
+  width: 3.5rem;
+  height: 3.5rem;
+  font-size: 1.4rem;
+}
+
+.chatbot-window {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 5.5rem;
+  z-index: 1500;
+  width: 360px;
+  max-width: calc(100vw - 2rem);
+}
+
+.chatbot-body {
+  height: 380px;
+}

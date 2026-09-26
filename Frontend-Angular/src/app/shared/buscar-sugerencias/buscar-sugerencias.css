@@ -1,0 +1,45 @@
+.sugerencia-caja {
+  min-width: 220px;
+}
+
+.sugerencia-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  max-height: 320px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12);
+}
+
+.sugerencia-grupo {
+  padding: 0.4rem 0.75rem 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--iub-primary);
+  background: #f8f9fa;
+  border-bottom: 1px solid #eef1f5;
+}
+
+.sugerencia-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  border-bottom: 1px solid #f1f3f5;
+}
+
+.sugerencia-item:hover,
+.sugerencia-item:focus {
+  background: #f0f4fa;
+}

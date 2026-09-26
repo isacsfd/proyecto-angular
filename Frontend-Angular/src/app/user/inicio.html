@@ -1,0 +1,85 @@
+<div class="mb-4">
+  <h2 class="mb-1">¡Bienvenido(a), {{ nombre() }}!</h2>
+  <p class="text-muted mb-0">
+    @if (carrera()) {
+      Estudiante de <strong>{{ carrera() }}</strong>. Explora el catálogo y consulta el asistente IA para resolver tus dudas.
+    } @else {
+      Explora el catálogo, consulta tus préstamos y usa el asistente IA para resolver tus dudas.
+    }
+  </p>
+</div>
+
+@if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+}
+
+@if (cargando()) {
+  <div class="spinner-overlay"><div class="spinner-border text-primary" role="status"></div></div>
+}
+
+<!-- Recomendaciones IA -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-header bg-white d-flex align-items-center">
+    <strong><i class="bi bi-stars text-warning me-1"></i>Recomendaciones para ti</strong>
+    @if (estadoIa(); as e) {
+      <span class="badge rounded-pill ms-auto" [class.text-bg-success]="e.disponible" [class.text-bg-secondary]="!e.disponible">
+        Motor IA: {{ e.motor_llm }}
+      </span>
+    }
+  </div>
+  <div class="card-body">
+    @if (recomendaciones().length === 0) {
+      <p class="text-muted mb-0">Aún no hay recomendaciones disponibles. Revisa el catálogo.</p>
+    } @else {
+      <div class="row g-3">
+        @for (r of recomendaciones(); track r.id) {
+          <div class="col-md-6 col-xl-4">
+            <div class="card h-100 card-hover border-0 shadow-sm">
+              <div class="card-body">
+                <h6 class="card-title mb-1">{{ r.titulo }}</h6>
+                <p class="text-muted small mb-2">{{ r.autor }} · {{ r.programa }}</p>
+                <p class="small mb-2"><i class="bi bi-info-circle me-1"></i>{{ r.razon }}</p>
+                <span class="badge" [class.text-bg-danger]="r.ejemplares <= 0" [class.text-bg-success]="r.ejemplares > 0">
+                  {{ r.ejemplares > 0 ? r.ejemplares + ' ejemplar(es) disponible(s)' : 'Sin ejemplares' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm card-hover h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-search display-6 text-iub"></i>
+        <h6 class="mt-2">Búsqueda semántica</h6>
+        <p class="text-muted small">Encuentra libros por tema o intención, no solo por título.</p>
+        <a class="btn btn-outline-primary btn-sm" routerLink="/inicio/catalogo">Ir al catálogo</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm card-hover h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-journal-arrow-up display-6 text-iub"></i>
+        <h6 class="mt-2">Mis préstamos</h6>
+        <p class="text-muted small">Consulta tus préstamos activos y fechas de entrega.</p>
+        <a class="btn btn-outline-primary btn-sm" routerLink="/inicio/mis-prestamos">Ver préstamos</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm card-hover h-100">
+      <div class="card-body text-center">
+        <i class="bi bi-laptop display-6 text-iub"></i>
+        <h6 class="mt-2">Dispositivos</h6>
+        <p class="text-muted small">Consulta disponibilidad de computadores y tabletas.</p>
+        <a class="btn btn-outline-primary btn-sm" routerLink="/inicio/dispositivos">Ver dispositivos</a>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de usuarios</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/Inicio.css">
+    <link rel="stylesheet" href="../css/estilo.css">
+    <style>
+      .navbar { background-color: #1e2640; }
+      .acp { background-color: #1e2640; }
+      .table-custom { background-color: white; }
+      .table-custom thead { background-color: #e9ecef; }
+      .table-custom th, .table-custom td { vertical-align: middle; text-align: center; padding: 12px 8px; }
+      main { margin-top: 160px; }
+      .filtros-container { display: flex; gap: 8px; align-items: center; }
+      .btn-filtro { background-color: #e9ecef; border: 1px solid #ced4da; color: #495057; padding: 6px 12px; font-size: 14px; }
+      .btn-filtro:hover { background-color: #d1d7dc; }
+      .search-container { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      body { overflow-x: hidden; }
+      .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .table th, .table td { white-space: nowrap; }
+      .badge { font-size: 0.9em; padding: 0.5em 0.75em; }
+      .view-btn { min-width: 100px; }
+      @media (max-width: 1200px) { .table th, .table td { padding: 8px 5px; font-size: 0.9rem; } }
+      @media (max-width: 992px) { .table th, .table td { padding: 6px 4px; font-size: 0.85rem; } }
+    </style>
+</head>
+<body class="bg-light">
+    <header>
+        <nav class="navbar navbar-expand-lg shadow fixed-top">
+            <div class="container-fluid">
+              <a class="navbar-brand" href="#">
+                <img src="../Img/IUB logo 2.png" alt="Logo" height="40">
+              </a>
+              <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+              </button>
+              <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                  <li class="nav-item"><a class="nav-link text-white" href="../Interfaces del admin/Inicio.html">Inicio</a></li>
+                  <li class="nav-item"><a class="nav-link text-white active" href="../Interfaces del admin/Registro_Usuario.html">Registros</a></li>
+                  <li class="nav-item"><a class="nav-link text-white" href="../Interfaces del admin/Dispositivos.html">Préstamo de dispositivos</a></li>
+                  <li class="nav-item"><a class="nav-link text-white" href="../Interfaces del admin/Ingreso_Usuarios.html">Ingreso de usuarios</a></li>
+                  <li class="nav-item"><a class="nav-link text-white" href="../Interfaces del admin/agregar_estudiante.html">Agregar Usuario</a></li>
+                  <!-- ✅ MEJORA: enlace al Dashboard -->
+                  <li class="nav-item"><a class="nav-link text-white" href="../Interfaces del admin/estadisticas.html"><i class="bi bi-bar-chart-fill"></i> Dashboard</a></li>
+                  <li class="nav-item"><a class="nav-link text-white" href="../manual/ManualUsuario.pdf" target="_blank"><i class="bi bi-question-circle"></i> Ayuda</a></li>
+                  <li class="nav-item dropdown">
+                    <a class="nav-link text-white" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      <i class="bi bi-person-circle fs-3 text-white ms-1 me-3"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><a class="dropdown-item" href="#" onclick="cerrarSesion()">Cerrar Sesión</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </nav>
+    </header>
+
+    <main class="mb-5">
+      <h1 class="mt-1 mb-3 ms-5">Registro de usuarios</h1>
+      <div class="container-fluid ms-4 mb-4">
+        <div class="search-container d-flex align-items-center">
+            <form class="d-flex" style="min-width: 500px;" id="searchForm">
+                <!-- ✅ MEJORA: buscador en tiempo real con data-tabla -->
+                <input type="text"
+                       class="form-control"
+                       placeholder="🔍 Buscar por nombre, identificación o email..."
+                       id="searchInput"
+                       data-tabla="tablaUsuariosBody">
+            </form>
+            <div class="filtros-container ms-3 d-flex">
+                <select class="form-select bg-body-secondary" id="filterType">
+                    <option value="">Todos los tipos</option>
+                    <option value="Admin">Administrador</option>
+                    <option value="Est">Estudiante</option>
+                    <option value="Fun">Funcionario</option>
+                    <option value="Doc">Docente</option>
+                </select>
+                <button class="btn acp text-white ms-2" style="height: 38px;" id="filterButton">
+                    <i class="bi bi-funnel"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+      <div class="table-responsive ms-5 me-5 rounded">
+          <div class="rounded shadow">
+              <table class="table mb-0 table-secondary text-center align-middle">
+                  <thead>
+                      <tr>
+                          <th scope="col">ID</th>
+                          <th scope="col">Identificación</th>
+                          <th scope="col">Nombre</th>
+                          <th scope="col">Rol</th>
+                          <th scope="col">Email</th>
+                          <th scope="col">Acciones</th>
+                      </tr>
+                  </thead>
+                  <!-- ✅ id agregado para que buscador.js pueda filtrar -->
+                  <tbody class="table-light" id="tablaUsuariosBody">
+                      <!-- Datos se llenarán dinámicamente -->
+                  </tbody>
+              </table>
+          </div>
+      </div>
+      <div class="pagination-container mt-3 d-flex justify-content-center">
+          <nav aria-label="Page navigation">
+              <ul class="pagination"></ul>
+          </nav>
+      </div>
+    </main>
+
+    <!-- Modal detalles de usuario -->
+    <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="userModalLabel">Detalles Completos del Usuario</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>ID:</strong> <span id="modalUserId"></span></p>
+                                <p><strong>Nombre Completo:</strong> <span id="modalUserName"></span></p>
+                                <p><strong>Username:</strong> <span id="modalUserUsername"></span></p>
+                                <p><strong>Email:</strong> <span id="modalUserEmail"></span></p>
+                                <p><strong>Teléfono:</strong> <span id="modalUserPhone"></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Rol:</strong> <span id="modalUserRole"></span></p>
+                                <p><strong>Identificación:</strong> <span id="modalUserIdentificacion"></span></p>
+                                <p><strong>Dirección:</strong> <span id="modalUserAddress"></span></p>
+                                <p><strong>Sede:</strong> <span id="modalUserSede"></span></p>
+                                <p><strong>Fecha de Registro:</strong> <span id="modalUserCreatedAt"></span></p>
+                            </div>
+                        </div>
+                        <div class="row mt-3" id="roleSpecificInfo"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <!-- ✅ MEJORAS agregadas -->
+    <script src="../js/sesion.js"></script>
+    <script src="../js/confirmacion.js"></script>
+    <script src="../js/buscador.js"></script>
+    <script src="../js/Registro_Usuarios.js"></script>
+</body>
+</html>

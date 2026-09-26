@@ -1,0 +1,97 @@
+<h2 class="mb-3">Catálogo y búsqueda con IA</h2>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <div class="input-group">
+      <app-buscar-sugerencias
+        class="flex-grow-1"
+        [libros]="sugerencias.libros()"
+        [usuarios]="[]"
+        [mostrarUsuarios]="false"
+        placeholder="Busca por intención: 'administración de empresas', 'algo sobre seguridad laboral'..."
+        [(termino)]="busqueda"
+        (seleccion)="buscarIA()"
+      ></app-buscar-sugerencias>
+      <button class="btn btn-iub text-white px-4" (click)="buscarIA()" [disabled]="buscando()">
+        @if (buscando()) {
+          <span class="spinner-border spinner-border-sm"></span>
+        } @else {
+          <i class="bi bi-search me-1"></i>Buscar con IA
+        }
+      </button>
+    </div>
+    <div class="mt-3 d-flex flex-wrap gap-2">
+      <button class="btn btn-sm btn-outline-secondary" (click)="cargarTodos()">Todos</button>
+      @for (c of categorias; track c.clave) {
+        <button
+          class="btn btn-sm"
+          [class.btn-iub]="categoriaSeleccionada === c.clave"
+          [class.text-white]="categoriaSeleccionada === c.clave"
+          [class.btn-outline-secondary]="categoriaSeleccionada !== c.clave"
+          (click)="buscarCategoria(c.clave)"
+        >
+          {{ c.etiqueta }}
+        </button>
+      }
+    </div>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="alert alert-warning">{{ error() }}</div>
+}
+
+@if (ultimoModo() === 'ia' && resultadosIA().length === 0 && !buscando()) {
+  <div class="alert alert-info">No se encontraron libros para esa consulta. Prueba con otros términos.</div>
+}
+
+@if (cargando() || buscando()) {
+  <div class="spinner-overlay"><div class="spinner-border text-primary" role="status"></div></div>
+}
+
+@if (ultimoModo() === 'ia') {
+  <div class="row g-3">
+    @for (r of resultadosIA(); track r.id) {
+      <div class="col-md-6 col-xl-4">
+        <div class="card h-100 card-hover border-0 shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <span class="badge text-bg-info mb-2">IA · {{ (r.score * 100).toFixed(0) }}%</span>
+            </div>
+            <h6 class="card-title mb-1">{{ r.titulo }}</h6>
+            <p class="text-muted small mb-2">{{ r.autor }} · {{ r.programa }}</p>
+            <span class="badge" [class.text-bg-danger]="r.ejemplares <= 0" [class.text-bg-success]="r.ejemplares > 0">
+              {{ r.ejemplares > 0 ? r.ejemplares + ' disponible(s)' : 'Sin ejemplares' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@if (ultimoModo() === 'todos' || ultimoModo() === 'categoria') {
+  <div class="row g-3">
+    @for (l of libros(); track l.ID) {
+      <div class="col-md-6 col-xl-4">
+        <div class="card h-100 card-hover border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title mb-1">{{ l.Titulo }}</h6>
+            <p class="text-muted small mb-2">{{ l.Autor }} · {{ l.Programa }}</p>
+            <span class="badge" [class.text-bg-danger]="(l.Ejemplar ?? 0) <= 0" [class.text-bg-success]="(l.Ejemplar ?? 0) > 0">
+              {{ (l.Ejemplar ?? 0) > 0 ? l.Ejemplar + ' disponible(s)' : 'Sin ejemplares' }}
+            </span>
+            @if (l.Editorial) {
+              <small class="text-muted d-block mt-1">{{ l.Editorial }} · {{ l['Año'] }}</small>
+            }
+          </div>
+        </div>
+      </div>
+    }
+    @empty {
+      <div class="col-12">
+        <p class="text-muted text-center py-4">No hay libros para mostrar.</p>
+      </div>
+    }
+  </div>
+}

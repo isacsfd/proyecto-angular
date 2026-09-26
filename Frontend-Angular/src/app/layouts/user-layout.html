@@ -1,0 +1,62 @@
+<div class="d-flex min-vh-100">
+  <aside class="sidebar d-none d-lg-flex flex-column p-3" style="width: 260px; flex-shrink: 0;">
+    <div class="sidebar-header">
+      <div class="sidebar-logo-caja">
+        <img src="/logo-iub.png" alt="Logo Institución Universitaria de Barranquilla" class="sidebar-logo">
+      </div>
+      <div class="sidebar-titulos">
+        <span class="sidebar-titulo">Biblioteca IUB</span>
+        <span class="sidebar-subtitulo">Portal del usuario</span>
+      </div>
+    </div>
+    @if (sedeActual(); as s) {
+      <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded-3" style="background: rgba(255, 255, 255, 0.08);">
+        <img [src]="s.logo" alt="Logo sede {{ s.nombre }}" width="28" height="28" class="rounded-2 object-fit-cover">
+        <small class="text-white-50">Biblioteca — {{ s.nombre }}</small>
+      </div>
+    }
+    <nav class="nav flex-column">
+      <a class="nav-link" routerLink="/inicio" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <i class="bi bi-house-door"></i>Inicio
+      </a>
+      <a class="nav-link" routerLink="/inicio/catalogo" routerLinkActive="active">
+        <i class="bi bi-search"></i>Catálogo y búsqueda IA
+      </a>
+      <a class="nav-link" routerLink="/inicio/mis-prestamos" routerLinkActive="active">
+        <i class="bi bi-journal-arrow-up"></i>Mis préstamos
+      </a>
+      <a class="nav-link" routerLink="/inicio/dispositivos" routerLinkActive="active">
+        <i class="bi bi-laptop"></i>Dispositivos
+      </a>
+    </nav>
+    <div class="mt-auto">
+      <button class="btn btn-outline-light w-100" (click)="salir()">
+        <i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión
+      </button>
+    </div>
+  </aside>
+
+  <div class="flex-grow-1 d-flex flex-column" style="min-width: 0;">
+    <nav class="navbar bg-white shadow-sm d-lg-none px-3">
+      <span class="navbar-brand fw-semibold text-iub"><i class="bi bi-book-half me-1"></i>Biblioteca IUB</span>
+      <div class="dropdown">
+        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+          <i class="bi bi-person-circle me-1"></i>{{ nombre() }}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" routerLink="/inicio" routerLinkActive="active" (click)="cerrarMovil()">Inicio</a></li>
+          <li><a class="dropdown-item" routerLink="/inicio/catalogo" routerLinkActive="active" (click)="cerrarMovil()">Catálogo y búsqueda IA</a></li>
+          <li><a class="dropdown-item" routerLink="/inicio/mis-prestamos" routerLinkActive="active" (click)="cerrarMovil()">Mis préstamos</a></li>
+          <li><a class="dropdown-item" routerLink="/inicio/dispositivos" routerLinkActive="active" (click)="cerrarMovil()">Dispositivos</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="javascript:void(0)" (click)="salir()"><i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión</a></li>
+        </ul>
+      </div>
+    </nav>
+    <main class="flex-grow-1 p-3 p-md-4">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+  <app-chatbot></app-chatbot>
+</div>

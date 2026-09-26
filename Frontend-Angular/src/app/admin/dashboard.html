@@ -1,0 +1,187 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="mb-1">Panel de control con IA</h2>
+    <p class="text-muted mb-0">Insights predictivos y reportes inteligentes generados con análisis de datos.</p>
+  </div>
+  @if (estadoIa()) {
+    <span class="badge rounded-pill" [ngClass]="estadoIa()!.disponible ? 'text-bg-success' : 'text-bg-secondary'">
+      Motor IA: {{ estadoIa()!.motor_llm }} {{ estadoIa()!.disponible ? '(LLM local)' : '(determinista)' }}
+    </span>
+  }
+</div>
+
+@if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+}
+
+@if (cargando()) {
+  <div class="spinner-overlay">
+    <div class="spinner-border text-primary" role="status"></div>
+  </div>
+}
+
+@if (datos(); as d) {
+  <!-- Tarjetas de resumen -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm card-hover h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-3 bg-iub text-white p-3 me-3"><i class="bi bi-graph-up fs-4"></i></div>
+            <div>
+              <div class="text-muted small">Préstamos proyectados</div>
+              <div class="fs-4 fw-bold">{{ d.tendencia.proyeccion_proximo_mes ?? '—' }}</div>
+              <div class="text-muted small">Próximo mes ({{ d.tendencia.metodo }})</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm card-hover h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-3 bg-danger text-white p-3 me-3"><i class="bi bi-exclamation-triangle fs-4"></i></div>
+            <div>
+              <div class="text-muted small">Préstamos vencidos</div>
+              <div class="fs-4 fw-bold">{{ d.morosidad.total }}</div>
+              <div class="text-muted small">Requieren seguimiento</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm card-hover h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-3 bg-warning text-white p-3 me-3"><i class="bi bi-clock-history fs-4"></i></div>
+            <div>
+              <div class="text-muted small">Por aprobar</div>
+              <div class="fs-4 fw-bold">{{ d.pendientes_aprobacion.length }}</div>
+              <div class="text-muted small">Solicitudes de préstamo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="card border-0 shadow-sm card-hover h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="rounded-3 bg-secondary text-white p-3 me-3"><i class="bi bi-laptop fs-4"></i></div>
+            <div>
+              <div class="text-muted small">Dispositivos totales</div>
+              <div class="fs-4 fw-bold">{{ d.demanda_dispositivos.total_dispositivos }}</div>
+              <div class="text-muted small">{{ d.demanda_dispositivos.por_estado['Disponible'] ?? 0 }} disponibles</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Tendencia -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-semibold">Tendencia de préstamos por mes</div>
+        <div class="card-body">
+          @if (d.tendencia.series.length === 0) {
+            <p class="text-muted mb-0">Aún no hay datos de préstamos.</p>
+          } @else {
+            <div class="d-flex align-items-end gap-2" style="height: 160px;">
+              @for (s of d.tendencia.series; track s.mes) {
+                <div class="flex-fill text-center">
+                  <div class="bg-iub rounded-top mx-auto"
+                       [ngStyle]="{ height: (s.total / maximoTendencia) * 120 + 8 + 'px' }"
+                       [title]="s.mes + ': ' + s.total + ' préstamos'"></div>
+                  <small class="text-muted">{{ s.mes }}</small>
+                </div>
+              }
+            </div>
+            <hr>
+            <p class="mb-0">
+              <strong>Proyección próximo mes:</strong> {{ d.tendencia.proyeccion_proximo_mes ?? '—' }} préstamos
+              <span class="text-muted small">({{ d.tendencia.metodo }})</span>
+            </p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Libros más prestados -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-semibold">Libros más solicitados</div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush">
+            @for (l of d.libros_top; track l.id) {
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold">{{ l.titulo }}</div>
+                  <small class="text-muted">{{ l.autor }}</small>
+                </div>
+                <div class="text-end">
+                  <span class="badge text-bg-primary">{{ l.prestamos }} prést.</span>
+                  @if (!l.disponible) {
+                    <span class="badge text-bg-danger ms-1">Agotado</span>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+          @if (d.libros_top.length === 0) {
+            <p class="text-muted p-3 mb-0">Sin datos de préstamos todavía.</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Críticos -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-semibold"><i class="bi bi-exclamation-octagon text-warning me-1"></i>Disponibilidad crítica</div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush">
+            @for (c of d.disponibilidad_critica; track c.id) {
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold">{{ c.titulo }}</div>
+                  <small class="text-muted">{{ c.programa }}</small>
+                </div>
+                <span class="badge text-bg-warning">{{ c.ejemplares }} ejemplar(es)</span>
+              </li>
+            }
+          </ul>
+          @if (d.disponibilidad_critica.length === 0) {
+            <p class="text-muted p-3 mb-0">Sin libros en riesgo de agotarse.</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Morosidad -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-semibold"><i class="bi bi-person-exclamation text-danger me-1"></i>Morosidad detectada</div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush">
+            @for (m of d.morosidad.lista; track m.id) {
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold">{{ m.usuario }}</div>
+                  <small class="text-muted">{{ m.libro }}</small>
+                </div>
+                <span class="badge text-bg-danger">{{ m.dias_vencido }} días vencido</span>
+              </li>
+            }
+          </ul>
+          @if (d.morosidad.total === 0) {
+            <p class="text-muted p-3 mb-0">No hay préstamos vencidos. ¡Excelente!</p>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
