@@ -76,9 +76,6 @@ class Libro(Base):
     Precio = Column(String(50), nullable=True)
     Proveedor = Column(String(100), nullable=True)
     Registro_en_linea = Column(String(100), nullable=True)
-    estado = Column(Boolean, nullable=False, default=True, server_default="true")
-    created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
 
 class Prestamos(Base):
     __tablename__ = "prestamos"
@@ -92,7 +89,6 @@ class Prestamos(Base):
     state = Column(Enum("Activo", "Vencido", "Devuelto", name="estado_prestamo"), nullable=False)
     prestamo_state = Column(Enum("No Aprobado", "Aprobado", "Rechazado", name="estado_solicitud"), nullable=False, default="No Aprobado")
     observations = Column(String(250), nullable=True)
-    activo = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
 
@@ -102,18 +98,12 @@ class Contratistas(Base):
     ID = Column(Integer, primary_key=True, index=True, autoincrement=True)
     Editorial = Column(String(100), nullable=False)
     NIT = Column(Integer, nullable=False)
-    estado = Column(Boolean, nullable=False, default=True, server_default="true")
-    created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
 
 class Proveer(Base):
     __tablename__ = "proveer"
     
     Libro_ID = Column(Integer, primary_key=True, index=True)
     Contratista_ID = Column(Integer, primary_key=True, index=True)
-    estado = Column(Boolean, nullable=False, default=True, server_default="true")
-    created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
 
 class Dispositivo(Base):
     __tablename__ = "dispositivos"
@@ -125,7 +115,6 @@ class Dispositivo(Base):
     sede = Column(Enum("Soledad", "Barranquilla", "Colsamiro", name="tipo_sede"), nullable=False)
     estado = Column(Enum("Disponible", "Prestado", "Dañado", "En Mantenimiento", name="estado_dispositivo"), nullable=False, default="Disponible")
     observaciones = Column(String(255), nullable=True)
-    activo = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
 
@@ -139,7 +128,6 @@ class PrestamoDispositivo(Base):
     fecha_devolucion = Column(DateTime, nullable=True)
     estado = Column(Enum("Pendiente", "Activo", "Completado", "Dañado", "Rechazado", name="estado_prestamo_dispositivo"), nullable=False, default="Pendiente")
     observaciones = Column(String(255), nullable=True)
-    activo = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
 
@@ -151,6 +139,3 @@ class Configuracion(Base):
     clave = Column(String(100), unique=True, nullable=False)
     valor = Column(String(255), nullable=True)
     descripcion = Column(String(255), nullable=True)
-    estado = Column(Boolean, nullable=False, default=True, server_default="true")
-    created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())

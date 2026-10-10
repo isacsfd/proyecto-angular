@@ -1,7 +1,7 @@
 ﻿fastapi
 uvicorn
 sqlalchemy==2.0.43
-passlib[bcrypt]
+passlib==1.7.4
 python-jose[cryptography]
 pymysql
 h11
@@ -34,7 +34,7 @@ zipp
 future
 importlib-metadata
 greenlet
-bcrypt
+bcrypt==4.3.0
 scikit-learn
 pandas
 pytest

@@ -11,9 +11,6 @@ class Rol(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String(50), unique=True, nullable=False)
     descripcion = Column(String(255), nullable=True)
-    estado = Column(Boolean, nullable=False, default=True, server_default="true")
-    created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
 
 
 class Modulo(Base):
@@ -24,9 +21,6 @@ class Modulo(Base):
     ruta = Column(String(100), nullable=True)
     descripcion = Column(String(255), nullable=True)
     orden = Column(Integer, nullable=False, default=0)
-    estado = Column(Boolean, nullable=False, default=True, server_default="true")
-    created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
 
 
 class ModuloRol(Base):
@@ -34,9 +28,6 @@ class ModuloRol(Base):
 
     rol_id = Column(Integer, ForeignKey("rol.id"), primary_key=True)
     modulo_id = Column(Integer, ForeignKey("modulos.id"), primary_key=True)
-    estado = Column(Boolean, nullable=False, default=True, server_default="true")
-    created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
 
 
 # ─── Usuario (tabla `usuario`, rol por clave foránea a `rol`) ────────────────
@@ -56,9 +47,6 @@ class UserTable(Base):
     nivel_academico = Column(String(50), nullable=True)
     carrera = Column(String(100), nullable=True)
     sede = Column(Enum("Soledad", "Barranquilla", "Colsamiro", name="tipo_sede"), nullable=True, default="Soledad")
-    estado = Column(Boolean, nullable=False, default=True, server_default="true")
-    created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
-    updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
 
     @property
     def rol(self) -> str:
@@ -73,6 +61,5 @@ class LibraryAccess(Base):
     user_id = Column(Integer, nullable=False)
     message = Column(String(255), nullable=False)
     status = Column(Boolean, nullable=False, default=False)
-    activo = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
