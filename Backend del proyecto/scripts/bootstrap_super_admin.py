@@ -15,7 +15,7 @@ Reglas:
   - Se almacena exclusivamente como hash bcrypt en la columna `password`.
   - Comprueba idempotencia: si ya existe el username, la CC o cualquier
     super_administrador, NO crea duplicados.
-  - Ejecuta la migración del ENUM de roles en MySQL (no destructiva).
+  - Usa el esquema RBAC: el rol se referencia por `usuario.rol_id` -> `rol.id`.
 """
 
 import os
@@ -28,22 +28,34 @@ from passlib.context import CryptContext
 from sqlalchemy import text
 
 from database import engine, SessionLocal
-from models.models import UserTable
+from models.models import UserTable, Rol
 
 SUPER_ADMIN = "super_administrador"
 
 
-def _migrar_enum():
-    """Amplía el ENUM de roles en MySQL (no destruye datos)."""
+def _asegurar_rol_super(db):
+    """Crea el rol super_administrador en la tabla `rol` si no existe."""
+    rol = db.query(Rol).filter(Rol.nombre == SUPER_ADMIN).first()
+    if rol is None:
+        rol = Rol(nombre=SUPER_ADMIN, descripcion="Super administrador del sistema")
+        db.add(rol)
+        db.commit()
+        db.refresh(rol)
+        print("Rol super_administrador creado (id=%s)." % rol.id)
+    return rol
+
+
+def _crear_tablas_rbac():
+    """Crea las tablas RBAC (rol, modulos, modulos_X_rol) si no existen."""
+    from database import Base
     try:
-        with engine.begin() as conn:
-            conn.execute(text(
-                "ALTER TABLE usuarios MODIFY rol ENUM("
-                "'super_administrador','Administrador','Funcionario','Docente','Estudiante') NOT NULL"
-            ))
-        print("Migración de roles: ENUM actualizado.")
-    except Exception as e:  # SQLite u otro motor
-        print("Migración de roles: no aplicable aquí (%s)." % type(e).__name__)
+        from models.models import Modulo, ModuloRol  # noqa
+        Base.metadata.create_all(bind=engine, tables=[
+            Rol.__table__, Modulo.__table__, ModuloRol.__table__,
+        ])
+        print("Tablas RBAC verificadas.")
+    except Exception as e:
+        print("Tablas RBAC: %s" % type(e).__name__)
 
 
 def main():
@@ -62,14 +74,15 @@ def main():
         print("Faltan variables de entorno: %s" % ", ".join(faltan))
         sys.exit(1)
 
-    _migrar_enum()
+    _crear_tablas_rbac()
 
     db = SessionLocal()
     try:
         pwd = CryptContext(schemes=["bcrypt"])
+        rol_super = _asegurar_rol_super(db)
 
         # 1) Si YA existe un super administrador, no hacer nada (idempotente)
-        super_existente = db.query(UserTable).filter(UserTable.rol == SUPER_ADMIN).first()
+        super_existente = db.query(UserTable).filter(UserTable.rol_id == rol_super.id).first()
         if super_existente is not None:
             print(
                 "Ya existe un super administrador (id=%s, username=%s). Nada que hacer."
@@ -87,7 +100,7 @@ def main():
         if coincidencia is not None:
             # Promover la cuenta existente al rol super_administrador y fijar
             # la contraseña inicial (bcrypt). No se crea un duplicado.
-            coincidencia.rol = SUPER_ADMIN
+            coincidencia.rol_id = rol_super.id
             coincidencia.password = pwd.hash(password)
             if not coincidencia.nombre:
                 coincidencia.nombre = nombre
@@ -106,11 +119,12 @@ def main():
             email=username + "@unibarranquilla.edu.co",
             phone="",
             address="",
-            rol=SUPER_ADMIN,
+            rol_id=rol_super.id,
             password=pwd.hash(password),
             identificacion=cc,
             nivel_academico=None,
             carrera=None,
+            sede="Soledad",
         )
         db.add(nuevo)
         db.commit()

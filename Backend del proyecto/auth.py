@@ -27,7 +27,7 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models.models import UserTable
+from models.models import UserTable, Rol, Modulo, ModuloRol
 
 # ─── Configuración ────────────────────────────────────────────────────────────
 # En producción define MM_JWT_SECRET con una cadena aleatoria larga.
@@ -103,7 +103,8 @@ def verificar_token(
         )
 
     # Rol vigente tomado de la BD (revalidación), nunca del token.
-    payload["rol"] = user.rol
+    payload["rol"] = user.rol  # nombre del rol (resuelto por rol_id -> rol.nombre)
+    payload["rol_id"] = user.rol_id
     payload["id"] = user.id
     return payload
 
@@ -121,7 +122,12 @@ def es_super(token_data: dict) -> bool:
 
 def contar_super(db: Session) -> int:
     """Cantidad de usuarios con rol super_administrador."""
-    return db.query(UserTable).filter(UserTable.rol == SUPER_ADMIN).count()
+    return (
+        db.query(UserTable)
+        .join(Rol, UserTable.rol_id == Rol.id)
+        .filter(Rol.nombre == SUPER_ADMIN)
+        .count()
+    )
 
 
 # ─── Dependencias de rol ──────────────────────────────────────────────────────
@@ -147,3 +153,37 @@ def solo_super_administrador(token_data: dict = Depends(verificar_token)) -> dic
             detail="Acceso denegado. Se requiere rol de Super Administrador.",
         )
     return token_data
+
+
+# ─── Autorización por módulo (RBAC: modulos_X_rol) ───────────────────────────
+def requiere_modulo(nombre_modulo: str):
+    """
+    Fabrica una dependencia que verifica si el rol del usuario autenticado
+    tiene asignado el módulo en la tabla modulos_X_rol. El super administrador
+    accede siempre a todos los módulos.
+    """
+    def dep(
+        token_data: dict = Depends(verificar_token),
+        db: Session = Depends(get_db),
+    ) -> dict:
+        if token_data.get("rol") == SUPER_ADMIN:
+            return token_data
+        rol_id = token_data.get("rol_id")
+        if not rol_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acceso denegado. No tienes un rol válido.",
+            )
+        tiene = (
+            db.query(ModuloRol)
+            .join(Modulo, ModuloRol.modulo_id == Modulo.id)
+            .filter(ModuloRol.rol_id == rol_id, Modulo.nombre == nombre_modulo)
+            .first()
+        )
+        if not tiene:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"No tienes permiso para el módulo '{nombre_modulo}'.",
+            )
+        return token_data
+    return dep

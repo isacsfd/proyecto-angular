@@ -22,3 +22,4 @@ opencv-python
 scikit-learn
 pandas
 pytest
+psycopg2-binary

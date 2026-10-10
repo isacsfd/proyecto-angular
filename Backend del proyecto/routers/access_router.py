@@ -10,7 +10,7 @@ from services.acces_service import create_access
 from services.user_service import get_user_by_dni
 from services.rate_limit import limitador_qr, clave_por_ip
 from models.models import LibraryAccess, UserTable
-from auth import verificar_token, solo_administrador
+from auth import verificar_token, requiere_modulo
 from typing import List
 from datetime import datetime
 
@@ -104,7 +104,7 @@ class AccessLogResponse(BaseModel):
 @access_router.get("/", response_model=List[AccessLogResponse])
 def get_all_library_access(
     db: Session = Depends(get_db),
-    _: dict = Depends(solo_administrador),
+    _: dict = Depends(requiere_modulo("ingresos")),
     skip: int = 0,
     limit: int = 100,
 ):

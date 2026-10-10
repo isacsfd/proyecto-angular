@@ -1,0 +1,12 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.selector-rol .form-check-input {
+  cursor: pointer;
+}
+
+.login-bg {
+  padding: 1rem;
+}

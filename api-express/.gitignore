@@ -1,0 +1,6 @@
+# Dependencias y entorno
+node_modules/
+.env
+*.log
+coverage/
+dist/

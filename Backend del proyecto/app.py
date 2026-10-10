@@ -18,7 +18,7 @@ import database
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from database import SessionLocal, engine
-from models.models import UserTable, LibraryAccess
+from models.models import UserTable, LibraryAccess, Rol
 from requests.user_request import UserCreateRequest
 from routers.access_router import access_router
 from routers.ia_router import ia_router
@@ -27,7 +27,7 @@ from passlib.context import CryptContext
 from auth import (
     crear_token,
     verificar_token,
-    solo_administrador,
+    requiere_modulo,
     es_admin,
     es_super,
     contar_super,
@@ -162,7 +162,7 @@ _hilo_lector: threading.Thread | None = None  # Singleton: una sola cámara acti
         "Si el lector ya está activo, no se crea un segundo hilo."
     ),
 )
-def iniciar_lector(_: dict = Depends(solo_administrador)):
+def iniciar_lector(_: dict = Depends(requiere_modulo("ingresos"))):
     global _hilo_lector
     if _hilo_lector is not None and _hilo_lector.is_alive():
         return {"mensaje": "El lector QR ya está activo"}
@@ -270,7 +270,7 @@ class UserDetailResponse(BaseModel):
 )
 def read_all_users(
     db: Session = Depends(get_db),
-    _: dict = Depends(solo_administrador),
+    _: dict = Depends(requiere_modulo("gestion_usuarios")),
 ):
     return db.query(UserTable).all()
 
@@ -292,7 +292,7 @@ def read_all_users(
 def create_user(
     user: UserCreateRequest,
     db: Session = Depends(get_db),
-    token_data: dict = Depends(solo_administrador),
+    token_data: dict = Depends(requiere_modulo("gestion_usuarios")),
 ):
     # Reglas de escalada de privilegios
     if user.rol == "super_administrador":
@@ -301,7 +301,13 @@ def create_user(
         raise HTTPException(status_code=403, detail="Solo el super administrador puede crear administradores")
     if db.query(UserTable).filter(UserTable.identificacion == user.identificacion).first():
         raise HTTPException(status_code=400, detail="La identificación ya está registrada")
+    # Resolver rol (nombre) → id en la tabla `rol`
+    rol = db.query(Rol).filter(Rol.nombre == user.rol).first()
+    if rol is None:
+        raise HTTPException(status_code=400, detail=f"El rol '{user.rol}' no existe")
     data = user.model_dump()
+    data.pop("rol", None)
+    data["rol_id"] = rol.id
     data["password"] = hash_password(data["password"])
     new_user = UserTable(**data)
     db.add(new_user)
@@ -325,7 +331,7 @@ def read_user(
     db: Session = Depends(get_db),
     token_data: dict = Depends(verificar_token),
 ):
-    if token_data.get("rol") != "Administrador" and token_data.get("id") != user_id:
+    if not es_admin(token_data) and token_data.get("id") != user_id:
         raise HTTPException(status_code=403, detail="No tienes permisos para ver este usuario")
     db_user = db.query(UserTable).filter(UserTable.id == user_id).first()
     if db_user is None:
@@ -349,7 +355,7 @@ def update_user(
     user_id: int,
     user: UserUpdate,
     db: Session = Depends(get_db),
-    token_data: dict = Depends(solo_administrador),
+    token_data: dict = Depends(requiere_modulo("gestion_usuarios")),
 ):
     db_user = db.query(UserTable).filter(UserTable.id == user_id).first()
     if db_user is None:
@@ -370,10 +376,13 @@ def update_user(
         if db_user.rol == "super_administrador" and nuevo_rol != "super_administrador":
             if contar_super(db) <= 1:
                 raise HTTPException(status_code=403, detail="No puedes degradar al único super administrador")
+        rol_destino = db.query(Rol).filter(Rol.nombre == nuevo_rol).first()
+        if rol_destino is None:
+            raise HTTPException(status_code=400, detail=f"El rol '{nuevo_rol}' no existe")
+        datos["rol_id"] = rol_destino.id
+        datos.pop("rol", None)
 
     for key, value in datos.items():
-        if key == "sede" and value not in SEDES_VALIDAS:
-            raise HTTPException(status_code=400, detail="Sede no válida.")
         setattr(db_user, key, value)
     db.commit()
     db.refresh(db_user)
@@ -393,7 +402,7 @@ def update_user(
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
-    token_data: dict = Depends(solo_administrador),
+    token_data: dict = Depends(requiere_modulo("gestion_usuarios")),
 ):
     db_user = db.query(UserTable).filter(UserTable.id == user_id).first()
     if db_user is None:
@@ -480,7 +489,7 @@ def read_all_libros(
     return query.order_by(Libro.ID.desc()).all()
 
 @app.post("/libros/", response_model=LibroResponse, status_code=201, tags=["Libros"], summary="Agregar libro", description="Registra un nuevo libro en el catálogo. Solo administradores.")
-def create_libro(libro: LibroCreate, db: Session = Depends(get_db), _: dict = Depends(solo_administrador)):
+def create_libro(libro: LibroCreate, db: Session = Depends(get_db), _: dict = Depends(requiere_modulo("gestion_libros"))):
     db_libro = Libro(**libro.model_dump())
     db.add(db_libro); db.commit(); db.refresh(db_libro)
     return db_libro
@@ -574,7 +583,7 @@ def read_libro(libro_id: int, db: Session = Depends(get_db), _: dict = Depends(v
     return db_libro
 
 @app.put("/libros/{libro_id}", response_model=LibroResponse, tags=["Libros"], summary="Actualizar libro", description="Modifica los datos de un libro. Solo administradores.")
-def update_libro(libro_id: int, libro: LibroUpdate, db: Session = Depends(get_db), _: dict = Depends(solo_administrador)):
+def update_libro(libro_id: int, libro: LibroUpdate, db: Session = Depends(get_db), _: dict = Depends(requiere_modulo("gestion_libros"))):
     db_libro = db.query(Libro).filter(Libro.ID == libro_id).first()
     if not db_libro:
         raise HTTPException(status_code=404, detail="Libro no encontrado")
@@ -584,7 +593,7 @@ def update_libro(libro_id: int, libro: LibroUpdate, db: Session = Depends(get_db
     return db_libro
 
 @app.delete("/libros/{libro_id}", response_model=LibroResponse, tags=["Libros"], summary="Eliminar libro", description="Elimina un libro del catálogo. Solo administradores.")
-def delete_libro(libro_id: int, db: Session = Depends(get_db), _: dict = Depends(solo_administrador)):
+def delete_libro(libro_id: int, db: Session = Depends(get_db), _: dict = Depends(requiere_modulo("gestion_libros"))):
     db_libro = db.query(Libro).filter(Libro.ID == libro_id).first()
     if not db_libro:
         raise HTTPException(status_code=404, detail="Libro no encontrado")
@@ -679,7 +688,7 @@ def loan_get(loan_id: int, db: Session = Depends(get_db), token_data: dict = Dep
     return {"id": loan.id, "user_id": loan.user_id, "user": user.nombre, "book_id": loan.book_id, "book": book.Titulo if book else "N/A", "loan_date": loan.loan_date, "delivery_date": loan.delivery_date, "entry_date": loan.entry_date, "state": loan.state, "prestamo_state": loan.prestamo_state, "created_at": loan.created_at}
 
 @app.patch("/loan/{loan_id}", tags=["Préstamos de libros"], summary="Actualizar préstamo de libro", description="Actualiza el estado de un préstamo. El inventario se descuenta al aprobar y se devuelve al marcar como Devuelto o Rechazado.")
-def loan_update(loan_id: int, request: LoanRequestUpdate, db: Session = Depends(get_db), _: dict = Depends(solo_administrador)):
+def loan_update(loan_id: int, request: LoanRequestUpdate, db: Session = Depends(get_db), _: dict = Depends(requiere_modulo("gestion_prestamos"))):
     loan = db.query(Prestamos).filter(Prestamos.id == loan_id).first()
     if not loan: raise HTTPException(status_code=404, detail="Préstamo no encontrado")
 
@@ -738,13 +747,13 @@ def read_dispositivo(dispositivo_id: int, db: Session = Depends(get_db), _: dict
     return d
 
 @app.post("/dispositivos/", response_model=DispositivoResponse, status_code=201, tags=["Dispositivos"], summary="Registrar dispositivo", description="Agrega un nuevo computador o tableta al inventario. Solo administradores.")
-def create_dispositivo(dispositivo: DispositivoCreate, db: Session = Depends(get_db), _: dict = Depends(solo_administrador)):
+def create_dispositivo(dispositivo: DispositivoCreate, db: Session = Depends(get_db), _: dict = Depends(requiere_modulo("gestion_dispositivos"))):
     d = Dispositivo(**dispositivo.model_dump())
     db.add(d); db.commit(); db.refresh(d)
     return d
 
 @app.put("/dispositivos/{dispositivo_id}", response_model=DispositivoResponse, tags=["Dispositivos"], summary="Actualizar dispositivo", description="Modifica los datos de un dispositivo. Solo administradores.")
-def update_dispositivo(dispositivo_id: int, dispositivo: DispositivoUpdate, db: Session = Depends(get_db), _: dict = Depends(solo_administrador)):
+def update_dispositivo(dispositivo_id: int, dispositivo: DispositivoUpdate, db: Session = Depends(get_db), _: dict = Depends(requiere_modulo("gestion_dispositivos"))):
     d = db.query(Dispositivo).filter(Dispositivo.id == dispositivo_id).first()
     if not d: raise HTTPException(status_code=404, detail="Dispositivo no encontrado")
     for key, value in dispositivo.model_dump(exclude_unset=True).items():
@@ -753,7 +762,7 @@ def update_dispositivo(dispositivo_id: int, dispositivo: DispositivoUpdate, db: 
     return d
 
 @app.delete("/dispositivos/{dispositivo_id}", response_model=DispositivoResponse, tags=["Dispositivos"], summary="Eliminar dispositivo", description="Elimina un dispositivo y sus préstamos asociados. Solo administradores. No se re-numeran los IDs.")
-def delete_dispositivo(dispositivo_id: int, db: Session = Depends(get_db), _: dict = Depends(solo_administrador)):
+def delete_dispositivo(dispositivo_id: int, db: Session = Depends(get_db), _: dict = Depends(requiere_modulo("gestion_dispositivos"))):
     d = db.query(Dispositivo).filter(Dispositivo.id == dispositivo_id).first()
     if not d: raise HTTPException(status_code=404, detail="Dispositivo no encontrado")
     db.query(PrestamoDispositivo).filter(PrestamoDispositivo.dispositivo_id == dispositivo_id).delete()
@@ -833,7 +842,7 @@ def read_all_prestamos_dispositivos(db: Session = Depends(get_db), token_data: d
     ]
 
 @app.patch("/prestamos-dispositivos/{prestamo_id}", response_model=PrestamoDispositivoResponse, tags=["Préstamos de dispositivos"], summary="Gestionar préstamo de dispositivo", description="El administrador aprueba (Activo), rechaza (Rechazado) o gestiona la devolución (Completado) o daño (Dañado). El dispositivo se marca 'Prestado' solo al aprobar.")
-def update_prestamo_dispositivo(prestamo_id: int, request: PrestamoDispositivoUpdate, db: Session = Depends(get_db), _: dict = Depends(solo_administrador)):
+def update_prestamo_dispositivo(prestamo_id: int, request: PrestamoDispositivoUpdate, db: Session = Depends(get_db), _: dict = Depends(requiere_modulo("gestion_dispositivos"))):
     prestamo = db.query(PrestamoDispositivo).filter(PrestamoDispositivo.id == prestamo_id).first()
     if not prestamo: raise HTTPException(status_code=404, detail="Préstamo no encontrado")
     if request.fecha_devolucion: prestamo.fecha_devolucion = request.fecha_devolucion

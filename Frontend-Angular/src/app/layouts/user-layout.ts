@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/services/auth.service';
-import { sedeInfo } from '../core/sedes';
+import { sedeInfo } from '../core/models/sedes';
 import { Chatbot } from '../shared/chatbot/chatbot';
 
 @Component({
@@ -20,6 +20,14 @@ export class UserLayout {
 
   sedeActual() {
     return sedeInfo(this.auth.usuario()?.sede);
+  }
+
+  puede(modulo: string): boolean {
+    return this.auth.tienePermiso(modulo);
+  }
+
+  esDemo(): boolean {
+    return this.auth.isDemo();
   }
 
   salir(): void {

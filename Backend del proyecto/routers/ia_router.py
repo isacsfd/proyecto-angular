@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database import get_db, Libro
-from auth import verificar_token, solo_administrador
+from auth import verificar_token, requiere_modulo
 from services.ia import chatbot, predictivo
 from services.ia.busqueda_semantica import buscar
 from services.ia.recomendador import recomendar
@@ -128,7 +128,7 @@ def recomendaciones(
 @ia_router.get("/dashboard", summary="Panel de insights predictivos (solo administradores)")
 def dashboard_ia(
     db: Session = Depends(get_db),
-    _: dict = Depends(solo_administrador),
+    _: dict = Depends(requiere_modulo("dashboard")),
 ):
     """Reportes inteligentes: tendencia, morosidad, demanda y disponibilidad."""
     return predictivo.resumen(db)

@@ -3,6 +3,8 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { DemoService } from './demo.service';
+import { esRolAdmin, modulosDe, rutaInicial, tienePermiso as tienePermisoFn } from '../auth/permisos';
 
 export interface Usuario {
   id: number;
@@ -27,6 +29,7 @@ export interface LoginResponse {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly demo = inject(DemoService);
   private readonly apiUrl = environment.apiUrl;
 
   usuario = signal<Usuario | null>(this.leerUsuarioGuardado());
@@ -46,6 +49,7 @@ export class AuthService {
       .post<LoginResponse>(`${this.apiUrl}/login`, { identificacion, password })
       .pipe(
         tap((res) => {
+          this.demo.desactivar();
           sessionStorage.setItem('jwt_token', res.access_token);
           sessionStorage.setItem('userData', JSON.stringify(res.user));
           sessionStorage.setItem('sesionActiva', 'true');
@@ -54,7 +58,14 @@ export class AuthService {
       );
   }
 
+  /** Modo demostración: inicia sesión SIN llamar a la API (datos estáticos). */
+  loginDemo(rol: string): void {
+    this.demo.activar(rol);
+    this.usuario.set(this.leerUsuarioGuardado());
+  }
+
   logout(): void {
+    this.demo.desactivar();
     sessionStorage.removeItem('jwt_token');
     sessionStorage.removeItem('userData');
     sessionStorage.removeItem('sesionActiva');
@@ -66,17 +77,35 @@ export class AuthService {
     return sessionStorage.getItem('jwt_token');
   }
 
+  isDemo(): boolean {
+    return this.demo.activo();
+  }
+
   isAuthenticated(): boolean {
-    return sessionStorage.getItem('sesionActiva') === 'true' && !!this.getToken();
+    return this.isDemo() || (sessionStorage.getItem('sesionActiva') === 'true' && !!this.getToken());
   }
 
   isAdmin(): boolean {
-    const rol = this.usuario()?.rol;
-    return rol === 'Administrador' || rol === 'super_administrador';
+    return esRolAdmin(this.usuario()?.rol);
   }
 
   isSuper(): boolean {
     return this.usuario()?.rol === 'super_administrador';
+  }
+
+  /** Módulos permitidos para el rol actual. */
+  modulos(): string[] {
+    return modulosDe(this.usuario()?.rol);
+  }
+
+  /** ¿El rol actual tiene permiso para el módulo indicado? */
+  tienePermiso(modulo: string): boolean {
+    return tienePermisoFn(this.usuario()?.rol, modulo);
+  }
+
+  /** Ruta inicial según el rol (panel admin o portal de usuario). */
+  rutaInicial(): string {
+    return rutaInicial(this.usuario()?.rol);
   }
 
   rolLegible(): string {

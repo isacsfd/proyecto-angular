@@ -24,12 +24,64 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from app import app, hash_password, limitador_login  # noqa: E402
 from database import SessionLocal  # noqa: E402
-from database import Libro, Prestamos, Dispositivo, PrestamoDispositivo  # noqa: E402
-from models.models import UserTable, LibraryAccess  # noqa: E402
+from database import Libro, Prestamos, Dispositivo, PrestamoDispositivo, Configuracion  # noqa: E402
+from models.models import UserTable, LibraryAccess, Rol, Modulo, ModuloRol  # noqa: E402
 from services.ia import busqueda_semantica  # noqa: E402
 from services.rate_limit import limitador_qr  # noqa: E402
 
-TABLAS = [LibraryAccess, PrestamoDispositivo, Prestamos, Dispositivo, Libro, UserTable]
+TABLAS = [ModuloRol, PrestamoDispositivo, Prestamos, LibraryAccess, Dispositivo, Libro, UserTable, Modulo, Rol, Configuracion]
+
+ROLES = ["super_administrador", "Administrador", "Funcionario", "Docente", "Estudiante"]
+
+MODULOS = [
+    "login", "inicio", "catalogo", "mis_prestamos", "dispositivos", "chatbot",
+    "dashboard", "gestion_usuarios", "gestion_libros", "gestion_dispositivos",
+    "gestion_prestamos", "estadisticas", "ingresos",
+]
+
+# Matriz de permisos (rol -> módulos). El super y el admin acceden a todo.
+MATRIZ = {
+    "super_administrador": MODULOS,
+    "Administrador": MODULOS,
+    "Funcionario": MODULOS,
+    "Docente": ["login", "inicio", "catalogo", "mis_prestamos", "dispositivos", "chatbot"],
+    "Estudiante": ["login", "inicio", "catalogo", "mis_prestamos", "dispositivos", "chatbot"],
+}
+
+
+def _sembrar_rbac(db):
+    """Crea roles, módulos y la matriz modulos_X_rol (idempotente)."""
+    roles = {}
+    for nombre in ROLES:
+        r = db.query(Rol).filter(Rol.nombre == nombre).first()
+        if not r:
+            r = Rol(nombre=nombre, descripcion=nombre)
+            db.add(r)
+            db.flush()
+        roles[nombre] = r.id
+    mods = {}
+    for nombre in MODULOS:
+        m = db.query(Modulo).filter(Modulo.nombre == nombre).first()
+        if not m:
+            m = Modulo(nombre=nombre, ruta="/" + nombre, descripcion=nombre, orden=0)
+            db.add(m)
+            db.flush()
+        mods[nombre] = m.id
+    for rol_nombre, lista in MATRIZ.items():
+        for mod_nombre in lista:
+            existe = db.query(ModuloRol).filter(
+                ModuloRol.rol_id == roles[rol_nombre], ModuloRol.modulo_id == mods[mod_nombre]
+            ).first()
+            if not existe:
+                db.add(ModuloRol(rol_id=roles[rol_nombre], modulo_id=mods[mod_nombre]))
+    db.commit()
+
+
+def _rol_id(db, rol):
+    r = db.query(Rol).filter(Rol.nombre == rol).first()
+    if r is None:
+        raise AssertionError(f"Rol '{rol}' no sembrado en la BD de pruebas")
+    return r.id
 
 
 @pytest.fixture(autouse=True)
@@ -40,6 +92,7 @@ def _db_limpio():
         for tabla in TABLAS:
             db.query(tabla).delete()
         db.commit()
+        _sembrar_rbac(db)
     finally:
         db.close()
     busqueda_semantica.reiniciar_cache()
@@ -66,7 +119,7 @@ def crear_usuario(db, rol="Estudiante", identificacion="1001", nombre="Ana Pére
         nombre=nombre,
         identificacion=identificacion,
         password=hash_password(password),
-        rol=rol,
+        rol_id=_rol_id(db, rol),
         phone="3000000000",
         address="Calle 1 #2-3",
         username="u" + identificacion,

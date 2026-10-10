@@ -1,0 +1,73 @@
+<div class="login-bg d-flex align-items-center justify-content-center">
+  <div class="card border-0 shadow rounded-4 p-4 p-md-5" style="width: 100%; max-width: 460px;">
+    <div class="text-center mb-4">
+      <img src="/logo-iub.png" alt="Logo IUB" width="110" onerror="this.style.display='none'">
+      <h1 class="fs-4 fw-semibold text-iub mt-3 mb-0">Biblioteca IUB</h1>
+      <p class="text-muted mb-0">Acceso al sistema de biblioteca</p>
+    </div>
+
+    <form (ngSubmit)="aceptar()">
+      <!-- Selector de rol (requisito del parcial) -->
+      <div class="mb-3">
+        <label for="rol" class="form-label fw-semibold">TIPO DE USUARIO (ROL)</label>
+        <select id="rol" name="rol" class="form-select bg-body-secondary" [(ngModel)]="rol">
+          @for (r of roles; track r.clave) {
+            <option [value]="r.clave">{{ r.etiqueta }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="identificacion" class="form-label fw-semibold">NÚMERO DE IDENTIFICACIÓN</label>
+        <input
+          id="identificacion"
+          type="text"
+          class="form-control bg-body-secondary"
+          [(ngModel)]="identificacion"
+          name="identificacion"
+          placeholder="Ej: 1234567890"
+          [disabled]="modoDemo()"
+        >
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label fw-semibold">CONTRASEÑA</label>
+        <input
+          id="password"
+          type="password"
+          class="form-control bg-body-secondary"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="••••••••"
+          [disabled]="modoDemo()"
+        >
+      </div>
+
+      <!-- Modo demostración (separado y sin API) -->
+      <div class="form-check mb-3">
+        <input id="modoDemo" type="checkbox" class="form-check-input" [ngModel]="modoDemo()" (ngModelChange)="modoDemo.set($event)" name="modoDemo">
+        <label for="modoDemo" class="form-check-label small">
+          Modo demostración (sin API, datos de ejemplo)
+        </label>
+      </div>
+
+      @if (mensaje()) {
+        <div class="alert alert-{{ tipoMensaje() }} alert-dismissible fade show py-2" role="alert">
+          {{ mensaje() }}
+        </div>
+      }
+
+      <div class="d-flex gap-2 justify-content-center">
+        <button type="button" class="btn btn-outline-secondary px-4" (click)="cancelar()">CANCELAR</button>
+        <button type="submit" class="btn btn-iub px-4 text-white" [disabled]="cargando()">
+          @if (cargando()) {
+            <span class="spinner-border spinner-border-sm" role="status"></span> Cargando...
+          } @else if (modoDemo()) {
+            <i class="bi bi-play-circle me-1"></i>INGRESAR (DEMO)
+          } @else {
+            ACEPTAR
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

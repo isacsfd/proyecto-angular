@@ -6,6 +6,7 @@ from jose import JWTError, jwt
 
 from app import hash_password, verify_password
 from auth import ALGORITHM, SECRET_KEY, crear_token, solo_administrador, verificar_token
+from models.models import Rol
 
 from .conftest import crear_usuario, login
 
@@ -79,7 +80,8 @@ def test_verificar_token_revalida_rol_de_bd(db):
     u = crear_usuario(db, rol="Administrador", identificacion="1001")
     token = crear_token({"id": u.id, "rol": "Administrador"})
     # Degradar en BD mientras el token aún 'dice' Administrador
-    u.rol = "Estudiante"
+    rol_estudiante = db.query(Rol).filter(Rol.nombre == "Estudiante").first()
+    u.rol_id = rol_estudiante.id
     db.commit()
     datos = verificar_token(_Credenciales(token), db)
     assert datos["rol"] == "Estudiante"

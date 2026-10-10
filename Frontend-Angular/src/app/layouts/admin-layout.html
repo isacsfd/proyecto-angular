@@ -9,6 +9,9 @@
         <span class="sidebar-subtitulo">{{ rol() }}</span>
       </div>
     </div>
+    @if (esDemo()) {
+      <span class="badge text-bg-warning mb-2">Modo demostración — datos de ejemplo</span>
+    }
     @if (sedeActual(); as s) {
       <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded-3" style="background: rgba(255, 255, 255, 0.08);">
         <img [src]="s.logo" alt="Logo sede {{ s.nombre }}" width="28" height="28" class="rounded-2 object-fit-cover">
@@ -25,32 +28,46 @@
       ></app-buscar-sugerencias>
     </div>
     <nav class="nav flex-column">
-      <a class="nav-link" routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <i class="bi bi-speedometer2"></i>Dashboard IA
-      </a>
-      <a class="nav-link" routerLink="/admin/libros" routerLinkActive="active">
-        <i class="bi bi-journal-text"></i>Libros
-      </a>
-      <a class="nav-link" routerLink="/admin/dispositivos" routerLinkActive="active">
-        <i class="bi bi-laptop"></i>Dispositivos
-      </a>
-      <a class="nav-link" routerLink="/admin/usuarios" routerLinkActive="active">
-        <i class="bi bi-people"></i>Usuarios
-      </a>
-      <a class="nav-link d-flex justify-content-between align-items-center" routerLink="/admin/prestamos" routerLinkActive="active">
-        <span><i class="bi bi-arrow-repeat"></i>Préstamos</span>
-        @if (notificaciones.pendientes() > 0) {
-          <span class="badge rounded-pill text-bg-danger notif-prestamos" [title]="notificaciones.pendientesLibros() + ' préstamos de libros y ' + notificaciones.pendientesDispositivos() + ' de dispositivos por aprobar'">
-            {{ notificaciones.pendientes() }}
-          </span>
-        }
-      </a>
-      <a class="nav-link" routerLink="/admin/estadisticas" routerLinkActive="active">
-        <i class="bi bi-graph-up-arrow"></i>Estadísticas
-      </a>
-      <a class="nav-link" routerLink="/admin/ingresos" routerLinkActive="active">
-        <i class="bi bi-qr-code-scan"></i>Ingresos QR
-      </a>
+      @if (puede('dashboard')) {
+        <a class="nav-link" routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <i class="bi bi-speedometer2"></i>Dashboard IA
+        </a>
+      }
+      @if (puede('gestion_libros')) {
+        <a class="nav-link" routerLink="/admin/libros" routerLinkActive="active">
+          <i class="bi bi-journal-text"></i>Libros
+        </a>
+      }
+      @if (puede('gestion_dispositivos')) {
+        <a class="nav-link" routerLink="/admin/dispositivos" routerLinkActive="active">
+          <i class="bi bi-laptop"></i>Dispositivos
+        </a>
+      }
+      @if (puede('gestion_usuarios')) {
+        <a class="nav-link" routerLink="/admin/usuarios" routerLinkActive="active">
+          <i class="bi bi-people"></i>Usuarios
+        </a>
+      }
+      @if (puede('gestion_prestamos')) {
+        <a class="nav-link d-flex justify-content-between align-items-center" routerLink="/admin/prestamos" routerLinkActive="active">
+          <span><i class="bi bi-arrow-repeat"></i>Préstamos</span>
+          @if (notificaciones.pendientes() > 0) {
+            <span class="badge rounded-pill text-bg-danger notif-prestamos" [title]="notificaciones.pendientesLibros() + ' préstamos de libros y ' + notificaciones.pendientesDispositivos() + ' de dispositivos por aprobar'">
+              {{ notificaciones.pendientes() }}
+            </span>
+          }
+        </a>
+      }
+      @if (puede('estadisticas')) {
+        <a class="nav-link" routerLink="/admin/estadisticas" routerLinkActive="active">
+          <i class="bi bi-graph-up-arrow"></i>Estadísticas
+        </a>
+      }
+      @if (puede('ingresos')) {
+        <a class="nav-link" routerLink="/admin/ingresos" routerLinkActive="active">
+          <i class="bi bi-qr-code-scan"></i>Ingresos QR
+        </a>
+      }
     </nav>
     <div class="mt-auto">
       <button class="btn btn-outline-light w-100" (click)="salir()">
@@ -67,17 +84,31 @@
           <i class="bi bi-person-circle me-1"></i>{{ nombre() }}
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="cerrarMovil()">Dashboard IA</a></li>
-          <li><a class="dropdown-item" routerLink="/admin/libros" routerLinkActive="active" (click)="cerrarMovil()">Libros</a></li>
-          <li><a class="dropdown-item" routerLink="/admin/dispositivos" routerLinkActive="active" (click)="cerrarMovil()">Dispositivos</a></li>
-          <li><a class="dropdown-item" routerLink="/admin/usuarios" routerLinkActive="active" (click)="cerrarMovil()">Usuarios</a></li>
-          <li><a class="dropdown-item d-flex justify-content-between align-items-center" routerLink="/admin/prestamos" routerLinkActive="active" (click)="cerrarMovil()">Préstamos
-            @if (notificaciones.pendientes() > 0) {
-              <span class="badge rounded-pill text-bg-danger">{{ notificaciones.pendientes() }}</span>
-            }
-          </a></li>
-          <li><a class="dropdown-item" routerLink="/admin/estadisticas" routerLinkActive="active" (click)="cerrarMovil()">Estadísticas</a></li>
-          <li><a class="dropdown-item" routerLink="/admin/ingresos" routerLinkActive="active" (click)="cerrarMovil()">Ingresos QR</a></li>
+          @if (puede('dashboard')) {
+            <li><a class="dropdown-item" routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="cerrarMovil()">Dashboard IA</a></li>
+          }
+          @if (puede('gestion_libros')) {
+            <li><a class="dropdown-item" routerLink="/admin/libros" routerLinkActive="active" (click)="cerrarMovil()">Libros</a></li>
+          }
+          @if (puede('gestion_dispositivos')) {
+            <li><a class="dropdown-item" routerLink="/admin/dispositivos" routerLinkActive="active" (click)="cerrarMovil()">Dispositivos</a></li>
+          }
+          @if (puede('gestion_usuarios')) {
+            <li><a class="dropdown-item" routerLink="/admin/usuarios" routerLinkActive="active" (click)="cerrarMovil()">Usuarios</a></li>
+          }
+          @if (puede('gestion_prestamos')) {
+            <li><a class="dropdown-item d-flex justify-content-between align-items-center" routerLink="/admin/prestamos" routerLinkActive="active" (click)="cerrarMovil()">Préstamos
+              @if (notificaciones.pendientes() > 0) {
+                <span class="badge rounded-pill text-bg-danger">{{ notificaciones.pendientes() }}</span>
+              }
+            </a></li>
+          }
+          @if (puede('estadisticas')) {
+            <li><a class="dropdown-item" routerLink="/admin/estadisticas" routerLinkActive="active" (click)="cerrarMovil()">Estadísticas</a></li>
+          }
+          @if (puede('ingresos')) {
+            <li><a class="dropdown-item" routerLink="/admin/ingresos" routerLinkActive="active" (click)="cerrarMovil()">Ingresos QR</a></li>
+          }
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item text-danger" href="javascript:void(0)" (click)="salir()"><i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión</a></li>
         </ul>

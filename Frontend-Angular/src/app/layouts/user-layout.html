@@ -9,6 +9,9 @@
         <span class="sidebar-subtitulo">Portal del usuario</span>
       </div>
     </div>
+    @if (esDemo()) {
+      <span class="badge text-bg-warning mb-2">Modo demostración — datos de ejemplo</span>
+    }
     @if (sedeActual(); as s) {
       <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded-3" style="background: rgba(255, 255, 255, 0.08);">
         <img [src]="s.logo" alt="Logo sede {{ s.nombre }}" width="28" height="28" class="rounded-2 object-fit-cover">

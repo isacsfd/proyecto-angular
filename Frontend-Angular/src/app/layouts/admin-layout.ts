@@ -3,7 +3,7 @@ import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/rou
 import { AuthService } from '../core/services/auth.service';
 import { SugerenciasService } from '../core/services/sugerencias.service';
 import { NotificacionesService } from '../core/services/notificaciones.service';
-import { sedeInfo } from '../core/sedes';
+import { sedeInfo } from '../core/models/sedes';
 import { BuscarSugerencias } from '../shared/buscar-sugerencias/buscar-sugerencias';
 import { Chatbot } from '../shared/chatbot/chatbot';
 
@@ -34,6 +34,15 @@ export class AdminLayout {
 
   rol(): string {
     return this.auth.rolLegible();
+  }
+
+  /** ¿El rol actual puede ver el módulo? (oculta opciones no permitidas) */
+  puede(modulo: string): boolean {
+    return this.auth.tienePermiso(modulo);
+  }
+
+  esDemo(): boolean {
+    return this.auth.isDemo();
   }
 
   sedeActual() {

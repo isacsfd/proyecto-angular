@@ -11,6 +11,7 @@ export const authGuard: CanActivateFn = () => {
   return router.createUrlTree(['/login']);
 };
 
+/** Permite el acceso al panel administrativo solo si el rol tiene algún módulo admin. */
 export const adminGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
@@ -26,5 +27,20 @@ export const guestGuard: CanActivateFn = () => {
   if (!auth.isAuthenticated()) {
     return true;
   }
-  return router.createUrlTree([auth.isAdmin() ? '/admin' : '/inicio']);
+  return router.createUrlTree([auth.rutaInicial()]);
 };
+
+/**
+ * moduloGuard — impide el acceso por URL directa a módulos no autorizados.
+ * Si el rol no tiene el módulo, redirige a su ruta inicial.
+ */
+export function moduloGuard(modulo: string): CanActivateFn {
+  return () => {
+    const auth = inject(AuthService);
+    const router = inject(Router);
+    if (auth.tienePermiso(modulo)) {
+      return true;
+    }
+    return router.createUrlTree([auth.rutaInicial()]);
+  };
+}

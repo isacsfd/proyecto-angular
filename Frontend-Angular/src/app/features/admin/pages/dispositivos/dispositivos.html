@@ -1,0 +1,93 @@
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Gestión de Dispositivos</h2>
+  <button class="btn btn-iub text-white" (click)="nuevo()"><i class="bi bi-plus-lg me-1"></i>Nuevo dispositivo</button>
+</div>
+
+@if (error()) {
+  <div class="alert alert-danger alert-dismissible">
+    {{ error() }}
+    <button type="button" class="btn-close" (click)="error.set('')"></button>
+  </div>
+}
+
+@if (mostrarForm()) {
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold">{{ editandoId ? 'Editar dispositivo' : 'Nuevo dispositivo' }}</div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Tipo</label>
+          <select class="form-select" [(ngModel)]="form.tipo">
+            @for (t of tipos; track t) { <option [value]="t">{{ t }}</option> }
+          </select>
+        </div>
+        <div class="col-md-3"><label class="form-label fw-semibold">Marca *</label><input class="form-control" [(ngModel)]="form.marca"></div>
+        <div class="col-md-3"><label class="form-label fw-semibold">Modelo *</label><input class="form-control" [(ngModel)]="form.modelo"></div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Sede</label>
+          <select class="form-select" [(ngModel)]="form.sede">
+            @for (s of sedes; track s) { <option [value]="s">{{ s }}</option> }
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Estado</label>
+          <select class="form-select" [(ngModel)]="form.estado">
+            @for (e of estados; track e) { <option [value]="e">{{ e }}</option> }
+          </select>
+        </div>
+        <div class="col-md-9"><label class="form-label fw-semibold">Observaciones</label><input class="form-control" [(ngModel)]="form.observaciones"></div>
+      </div>
+      <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-iub text-white" (click)="guardar()"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+        <button class="btn btn-outline-secondary" (click)="cancelar()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <app-buscar-sugerencias
+        class="flex-grow-1"
+        style="max-width: 420px;"
+        [libros]="sugerencias.libros()"
+        [usuarios]="sugerencias.usuarios()"
+        [mostrarUsuarios]="true"
+        placeholder="Buscar dispositivos, libros o estudiantes..."
+        [(termino)]="filtro"
+      ></app-buscar-sugerencias>
+      <div class="btn-group">
+        <button class="btn btn-sm btn-outline-danger" (click)="exportarPDF()"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
+        <button class="btn btn-sm btn-outline-success" (click)="exportarExcel()"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
+      </div>
+    </div>
+    @if (cargando()) {
+      <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle" appDatatable [dtData]="dispositivos()" [dtBuscar]="filtro()" [dtOrden]="0">
+          <thead class="table-light">
+            <tr><th>ID</th><th>Tipo</th><th>Marca</th><th>Modelo</th><th>Sede</th><th>Estado</th><th class="text-end">Acciones</th></tr>
+          </thead>
+          <tbody>
+            @for (d of dispositivos(); track d.id) {
+              <tr>
+                <td>{{ d.id }}</td>
+                <td><i class="bi me-1" [class.bi-laptop]="d.tipo === 'Computador'" [class.bi-tablet]="d.tipo === 'Tablet'"></i>{{ d.tipo }}</td>
+                <td>{{ d.marca }}</td>
+                <td>{{ d.modelo }}</td>
+                <td>{{ d.sede }}</td>
+                <td><app-estado-badge [valor]="d.estado" tipo="dispositivo"></app-estado-badge></td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-primary me-1" aria-label="Editar dispositivo" (click)="editar(d)"><i class="bi bi-pencil"></i></button>
+                  <button class="btn btn-sm btn-outline-danger" aria-label="Eliminar dispositivo" (click)="eliminar(d)"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>

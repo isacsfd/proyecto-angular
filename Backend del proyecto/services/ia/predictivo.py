@@ -19,7 +19,7 @@ from datetime import datetime
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from sqlalchemy import func
+from sqlalchemy import func, cast, String
 from sqlalchemy.orm import Session
 
 from database import Libro, Prestamos, Dispositivo, PrestamoDispositivo
@@ -88,7 +88,7 @@ def libros_top(db: Session, top: int = 5) -> list[dict]:
     top_ids = [bid for bid, _ in conteo.most_common(top)]
     libros = {
         l.ID: l
-        for l in db.query(Libro).filter(Libro.ID.in_(top_ids)).all()
+        for l in db.query(Libro).filter(cast(Libro.ID, String).in_(top_ids)).all()
     }
     resultados = []
     for libro_id, veces in conteo.most_common(top):
@@ -167,7 +167,7 @@ def morosidad(db: Session, top: int = 10) -> dict:
     } if vencidos else {}
     libros = {
         l.ID: l
-        for l in db.query(Libro).filter(Libro.ID.in_([p.book_id for p, _ in vencidos])).all()
+        for l in db.query(Libro).filter(cast(Libro.ID, String).in_([p.book_id for p, _ in vencidos])).all()
     } if vencidos else {}
 
     lista = [
@@ -196,7 +196,7 @@ def pendientes_aprobacion(db: Session) -> list[dict]:
     }
     libros = {
         l.ID: l
-        for l in db.query(Libro).filter(Libro.ID.in_([p.book_id for p in pendientes])).all()
+        for l in db.query(Libro).filter(cast(Libro.ID, String).in_([p.book_id for p in pendientes])).all()
     }
     return [
         {

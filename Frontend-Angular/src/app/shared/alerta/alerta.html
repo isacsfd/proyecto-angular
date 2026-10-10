@@ -1,0 +1,8 @@
+@if (mensaje) {
+  <div class="alert alert-{{ tipo }} {{ descartable ? 'alert-dismissible' : '' }}" role="alert">
+    {{ mensaje }}
+    @if (descartable) {
+      <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrar.emit()"></button>
+    }
+  </div>
+}

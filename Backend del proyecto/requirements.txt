@@ -1,4 +1,4 @@
-fastapi
+﻿fastapi
 uvicorn
 sqlalchemy
 passlib[bcrypt]
@@ -38,3 +38,4 @@ bcrypt
 scikit-learn
 pandas
 pytest
+psycopg2-binary
