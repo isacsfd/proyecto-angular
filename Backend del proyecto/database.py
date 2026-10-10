@@ -44,7 +44,25 @@ elif os.getenv("RENDER"):
     )
 else:
     SQLALCHEMY_DATABASE_URL = _url_desarrollo()
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+
+# Configuración del pool para Render + Neon (el host "-pooler" usa PgBouncer en
+# modo transacción: cierra conexiones ociosas del lado del servidor).
+#   - pool_pre_ping: antes de prestar una conexión ejecuta un ping; si la conexión
+#     quedó obsoleta/cerrada por el pooler ("SSL connection has been closed
+#     unexpectedly", "server closed the connection unexpectedly"), se descarta y
+#     se crea otra sana. No cambia SSL: se conserva sslmode=require de la URL.
+#   - pool_recycle: limita la antigüedad de la conexión para evitar reutilizar
+#     conexiones que el pooler pueda haber cerrado por inactividad.
+#   - pool_size/max_overflow/pool_timeout: acotados (uvicorn en Render corre con
+#     WEB_CONCURRENCY=1); no se abren conexiones de más contra Neon.
+ENGINE_OPTIONS = {
+    "pool_pre_ping": True,
+    "pool_recycle": int(os.getenv("MM_POOL_RECYCLE", "300")),
+    "pool_size": int(os.getenv("MM_POOL_SIZE", "5")),
+    "max_overflow": int(os.getenv("MM_POOL_MAX_OVERFLOW", "5")),
+    "pool_timeout": int(os.getenv("MM_POOL_TIMEOUT", "30")),
+}
+engine = create_engine(SQLALCHEMY_DATABASE_URL, **ENGINE_OPTIONS)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
