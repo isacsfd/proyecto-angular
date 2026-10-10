@@ -36,8 +36,11 @@ from auth import (
 import os, threading, sys
 
 # ─── Lector QR ───────────────────────────────────────────────
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from qr import reader
+# El lector QR (OpenCV + cámara) se importa de forma PEREZOSA dentro del
+# endpoint /api/iniciar-lector (ver _cargar_lector_qr). Así el arranque del
+# backend NO depende de OpenCV ni de la carpeta qr/ (no disponibles en
+# entornos sin GUI como Render). La funcionalidad QR se conserva para
+# servidores con cámara y OpenCV instalado.
 
 # ─── Hash de contraseñas ─────────────────────────────────────
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -152,6 +155,22 @@ def read_root():
 # ══════════════════════════════════════════════════════════════
 _hilo_lector: threading.Thread | None = None  # Singleton: una sola cámara activa
 
+
+def _cargar_lector_qr():
+    """
+    Importa PEREZOSAMENTE el lector QR (OpenCV + cámara) desde la carpeta 'qr/'
+    de la raíz del repositorio. Devuelve el módulo `reader` o None si no está
+    disponible (p. ej. sin OpenCV o sin la carpeta). No rompe el arranque.
+    """
+    import sys as _sys
+    _sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+    try:
+        from qr import reader  # requiere OpenCV (cv2); opcional en la nube
+        return reader
+    except Exception:
+        return None
+
+
 @app.post(
     "/api/iniciar-lector",
     tags=["QR"],
@@ -159,13 +178,23 @@ _hilo_lector: threading.Thread | None = None  # Singleton: una sola cámara acti
     description=(
         "Inicia el lector de código QR usando la cámara del servidor. "
         "Solo disponible para administradores autenticados. "
-        "Si el lector ya está activo, no se crea un segundo hilo."
+        "Si el lector ya está activo, no se crea un segundo hilo. "
+        "Requiere la carpeta 'qr/' y OpenCV con cámara (no disponible en entornos sin GUI)."
     ),
 )
 def iniciar_lector(_: dict = Depends(requiere_modulo("ingresos"))):
     global _hilo_lector
     if _hilo_lector is not None and _hilo_lector.is_alive():
         return {"mensaje": "El lector QR ya está activo"}
+    reader = _cargar_lector_qr()
+    if reader is None:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "El lector QR no está disponible en este servidor: requiere la carpeta "
+                "'qr/' y OpenCV con acceso a cámara (no está habilitado en entornos sin GUI)."
+            ),
+        )
     _hilo_lector = threading.Thread(target=reader.leer_qr_con_delay, daemon=True)
     _hilo_lector.start()
     return {"mensaje": "Lector QR iniciado correctamente"}
@@ -877,4 +906,7 @@ def update_prestamo_dispositivo(prestamo_id: int, request: PrestamoDispositivoUp
 # ══════════════════════════════════════════════════════════════
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MANUAL_DIR = os.path.join(BASE_DIR, "Frontend del proyecto", "manual")
-app.mount("/manual", StaticFiles(directory=MANUAL_DIR), name="manual")
+# Se monta solo si el directorio existe (evita fallo de arranque si el deploy
+# no incluye "Frontend del proyecto/manual"). Comportamiento igual si existe.
+if os.path.isdir(MANUAL_DIR):
+    app.mount("/manual", StaticFiles(directory=MANUAL_DIR), name="manual")

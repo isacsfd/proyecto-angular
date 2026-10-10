@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote_plus
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
@@ -6,14 +7,30 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, Integer, String, Boolean, Enum, DateTime, func
 from datetime import datetime
 
-# URL de conexión por variable de entorno (producción debe definirla).
-# Motores soportados:
-#   MySQL (dev):  mysql+pymysql://usuario:clave@localhost:3306/biblioteca_iub (1)
-#   PostgreSQL:   postgresql+psycopg2://usuario:clave@localhost:5432/biblioteca_iub
-SQLALCHEMY_DATABASE_URL = os.getenv(
-    "MM_DATABASE_URL",
-    "mysql+pymysql://root@localhost:3306/biblioteca_iub (1)",
-)
+
+def _url_desarrollo() -> str:
+    """
+    URL de PostgreSQL LOCAL (desarrollo), sin credenciales embebidas.
+    Se compone de variables de entorno opcionales:
+      MM_DB_USER (default postgres), MM_DB_PASSWORD (default vacío),
+      MM_DB_HOST (default localhost), MM_DB_PORT (default 5432),
+      MM_DB_NAME (default biblioteca_iub).
+    No incluye secretos en el código.
+    """
+    user = os.getenv("MM_DB_USER", "postgres")
+    pwd = os.getenv("MM_DB_PASSWORD", "")
+    host = os.getenv("MM_DB_HOST", "localhost")
+    port = os.getenv("MM_DB_PORT", "5432")
+    name = os.getenv("MM_DB_NAME", "biblioteca_iub")
+    cred = f"{user}:{quote_plus(pwd)}@" if pwd else f"{user}@"
+    return f"postgresql+psycopg2://{cred}{host}:{port}/{name}"
+
+
+# Selección de base de datos:
+#   - Si MM_DATABASE_URL está definida, se usa tal cual (p. ej. Neon en la nube).
+#   - Si no, se usa PostgreSQL LOCAL de desarrollo (sin credenciales embebidas).
+# El controlador de PostgreSQL es psycopg2 (postgresql+psycopg2).
+SQLALCHEMY_DATABASE_URL = os.getenv("MM_DATABASE_URL") or _url_desarrollo()
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
