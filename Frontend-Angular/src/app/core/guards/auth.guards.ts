@@ -5,7 +5,8 @@ import { AuthService } from '../services/auth.service';
 export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  if (auth.isAuthenticated()) {
+  // Presentación demo o autenticación real con JWT.
+  if (auth.isAuthenticated() || auth.isDemo()) {
     return true;
   }
   return router.createUrlTree(['/login']);
@@ -15,16 +16,17 @@ export const authGuard: CanActivateFn = () => {
 export const adminGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  if (auth.isAuthenticated() && auth.isAdmin()) {
+  const activo = auth.isAuthenticated() || auth.isDemo();
+  if (activo && auth.isAdmin()) {
     return true;
   }
-  return router.createUrlTree(['/inicio']);
+  return router.createUrlTree(activo ? ['/inicio'] : ['/login']);
 };
 
 export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  if (!auth.isAuthenticated()) {
+  if (!auth.isAuthenticated() && !auth.isDemo()) {
     return true;
   }
   return router.createUrlTree([auth.rutaInicial()]);
@@ -38,9 +40,10 @@ export function moduloGuard(modulo: string): CanActivateFn {
   return () => {
     const auth = inject(AuthService);
     const router = inject(Router);
-    if (auth.tienePermiso(modulo)) {
+    const activo = auth.isAuthenticated() || auth.isDemo();
+    if (activo && auth.tienePermiso(modulo)) {
       return true;
     }
-    return router.createUrlTree([auth.rutaInicial()]);
+    return router.createUrlTree(activo ? [auth.rutaInicial()] : ['/login']);
   };
 }

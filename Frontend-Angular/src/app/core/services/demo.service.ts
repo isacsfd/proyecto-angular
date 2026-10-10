@@ -34,20 +34,30 @@ const USUARIO_DEMO: Record<string, DemoUsuario> = {
  */
 @Injectable({ providedIn: 'root' })
 export class DemoService {
-  activo = signal(sessionStorage.getItem('demoModo') === 'true');
+  /**
+   * Modo demostración (solo en memoria, NO persistente): nunca escribe en las
+   * claves de sesión real (jwt_token/userData/sesionActiva) y no se restaura
+   * al recargar la página: exige activarlo de nuevo desde el login.
+   */
+  activo = signal(false);
+
+  private usuarioActivoDemo: DemoUsuario | null = null;
 
   activar(rol: string): void {
     const u = USUARIO_DEMO[rol] ?? USUARIO_DEMO['Estudiante'];
-    sessionStorage.setItem('demoModo', 'true');
-    sessionStorage.setItem('sesionActiva', 'true');
-    sessionStorage.setItem('userData', JSON.stringify(u));
-    sessionStorage.removeItem('jwt_token');
+    this.usuarioActivoDemo = u;
     this.activo.set(true);
   }
 
   desactivar(): void {
-    sessionStorage.removeItem('demoModo');
+    this.usuarioActivoDemo = null;
     this.activo.set(false);
+    sessionStorage.removeItem('demoModo');
+  }
+
+  /** Usuario demo vigente, o null si no hay modo demo. */
+  usuarioActual(): DemoUsuario | null {
+    return this.usuarioActivoDemo;
   }
 
   usuarioDemo(rol: string): DemoUsuario {

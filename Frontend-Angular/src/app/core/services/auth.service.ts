@@ -58,10 +58,10 @@ export class AuthService {
       );
   }
 
-  /** Modo demostración: inicia sesión SIN llamar a la API (datos estáticos). */
+  /** Modo demostración: sin llamar a la API, usa el usuario demo del rol elegido. */
   loginDemo(rol: string): void {
     this.demo.activar(rol);
-    this.usuario.set(this.leerUsuarioGuardado());
+    this.usuario.set(this.demo.usuarioActual());
   }
 
   logout(): void {
@@ -81,8 +81,9 @@ export class AuthService {
     return this.demo.activo();
   }
 
+  /** Autenticación REAL: exige un JWT válido. El modo demo NO cuenta como sesión real. */
   isAuthenticated(): boolean {
-    return this.isDemo() || (sessionStorage.getItem('sesionActiva') === 'true' && !!this.getToken());
+    return sessionStorage.getItem('sesionActiva') === 'true' && !!this.getToken();
   }
 
   isAdmin(): boolean {

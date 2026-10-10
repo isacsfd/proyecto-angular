@@ -57,11 +57,16 @@ export class Login {
     try {
       await firstValueFrom(this.auth.login(this.identificacion.trim(), this.password));
       const rolReal = this.auth.usuario()?.rol;
-      if (rolReal && rolReal !== this.rol) {
-        this.mostrar(`Sesión iniciada como ${this.etiquetaRol(rolReal)} (el selector no coincide).`, 'info');
-      } else {
-        this.mostrar('Inicio de sesión exitoso. Redirigiendo...', 'success');
+      if (!rolReal || rolReal !== this.rol) {
+        // Rol seleccionado ≠ rol real: limpiar la sesión creada y NO navegar.
+        this.auth.logout();
+        this.mostrar(
+          `El rol seleccionado (${this.etiquetaRol(this.rol)}) no coincide con el rol de su cuenta (${this.etiquetaRol(rolReal ?? '')}).`,
+          'danger',
+        );
+        return;
       }
+      this.mostrar('Inicio de sesión exitoso. Redirigiendo...', 'success');
       setTimeout(() => this.router.navigate([this.auth.rutaInicial()]), 800);
     } catch (err: any) {
       const detalle = err?.error?.detail || 'Error de conexión. Verifique que el servidor esté activo o use el modo demostración.';
