@@ -1,0 +1,35 @@
+# render.yaml — Blueprint de despliegue (Render)
+# ================================================
+# Define el servicio web de FastAPI (Biblioteca IUB) conectado al repositorio.
+# NO contiene secretos: las variables marcadas con `sync: false` se introducen
+# en el panel de Render (Environment) al crear el servicio desde el Blueprint.
+#
+# Uso: en Render → New → Blueprint → selecciona este repositorio.
+# Health check: GET /  (definido abajo).
+
+services:
+  - type: web
+    name: biblioteca-iub-api
+    runtime: python
+    plan: free
+    rootDir: "Backend del proyecto"
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      # Versión de Python (psycopg2-binary con wheels disponibles).
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      # Conexión PostgreSQL de Neon (se introduce en el panel; no en el repo).
+      - key: MM_DATABASE_URL
+        sync: false
+      # Secreto JWT de producción (Render lo genera aleatoriamente).
+      - key: MM_JWT_SECRET
+        generateValue: true
+      # Origen(es) del frontend para CORS (se define cuando el frontend se despliegue).
+      - key: MM_CORS_ORIGINS
+        sync: false
+      # Duración del token (horas).
+      - key: MM_TOKEN_HORAS
+        value: "8"
