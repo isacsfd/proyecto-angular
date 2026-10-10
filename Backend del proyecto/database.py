@@ -28,9 +28,22 @@ def _url_desarrollo() -> str:
 
 # Selección de base de datos:
 #   - Si MM_DATABASE_URL está definida, se usa tal cual (p. ej. Neon en la nube).
-#   - Si no, se usa PostgreSQL LOCAL de desarrollo (sin credenciales embebidas).
+#   - En Render (variable RENDER presente) es OBLIGATORIA: sin ella se lanza un
+#     error claro en lugar de caer silenciosamente en localhost (que provoca un
+#     OperationalError "Connection refused" al ejecutar create_all en el arranque).
+#   - En local (sin RENDER) se usa PostgreSQL LOCAL de desarrollo, sin credenciales.
 # El controlador de PostgreSQL es psycopg2 (postgresql+psycopg2).
-SQLALCHEMY_DATABASE_URL = os.getenv("MM_DATABASE_URL") or _url_desarrollo()
+_url = os.getenv("MM_DATABASE_URL")
+if _url:
+    SQLALCHEMY_DATABASE_URL = _url
+elif os.getenv("RENDER"):
+    raise RuntimeError(
+        "MM_DATABASE_URL no está definida. En Render, configúrela en "
+        "'Environment' con la cadena de conexión de PostgreSQL (p. ej. Neon, "
+        "con ?sslmode=require)."
+    )
+else:
+    SQLALCHEMY_DATABASE_URL = _url_desarrollo()
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
