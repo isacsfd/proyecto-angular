@@ -1,0 +1,44 @@
+<div class="modal-backdrop show"></div>
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ esEdicion() ? 'Editar libro' : 'Nuevo libro' }}</h5>
+        <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        @if (mensaje()) {
+          <div class="alert alert-danger py-2" role="alert">{{ mensaje() }}</div>
+        }
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label fw-semibold">Título *</label><input class="form-control" [(ngModel)]="form.Titulo" maxlength="255"></div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Autor *</label><input class="form-control" [(ngModel)]="form.Autor" maxlength="255"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Programa</label><input class="form-control" [(ngModel)]="form.Programa"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Editorial</label><input class="form-control" [(ngModel)]="form.Editorial"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Signatura</label><input class="form-control" [(ngModel)]="form.Signatura"></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Item</label><input type="number" class="form-control" [(ngModel)]="form.Item"></div>
+          <div class="col-md-3"><label class="form-label fw-semibold">Áreas</label><input type="number" class="form-control" [(ngModel)]="form.Areas"></div>
+          <div class="col-md-2"><label class="form-label fw-semibold">Ejemplares</label><input type="number" class="form-control" [(ngModel)]="form.Ejemplar"></div>
+          <div class="col-md-2"><label class="form-label fw-semibold">Año</label><input type="number" class="form-control" [(ngModel)]="form['Año']"></div>
+          <div class="col-md-2"><label class="form-label fw-semibold">Idioma</label><input class="form-control" [(ngModel)]="form.Idioma"></div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Sede</label>
+            <select class="form-select" [(ngModel)]="form.sede">
+              @for (s of sedes; track s.clave) { <option [value]="s.clave">{{ s.nombre }}</option> }
+            </select>
+          </div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Precio</label><input class="form-control" [(ngModel)]="form.Precio"></div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Proveedor</label><input class="form-control" [(ngModel)]="form.Proveedor"></div>
+          <div class="col-12"><label class="form-label fw-semibold">Observaciones</label><input class="form-control" [(ngModel)]="form.Observaciones"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="cerrarModal()" [disabled]="guardando">Cancelar</button>
+        <button type="button" class="btn btn-iub text-white" [disabled]="guardando" (click)="guardarLibro()">
+          @if (guardando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          {{ guardando ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

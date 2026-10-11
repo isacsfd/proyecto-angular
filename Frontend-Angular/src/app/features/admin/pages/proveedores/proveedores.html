@@ -1,0 +1,77 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Proveedores</h1>
+  <button type="button" class="btn btn-iub text-white" (click)="mostrarForm() ? cancelar() : nuevo()">
+    {{ mostrarForm() ? 'Cancelar' : 'Nuevo proveedor' }}
+  </button>
+</div>
+
+@if (mensaje()) {
+  <div class="alert alert-{{ tipoMensaje() }} py-2" role="alert">{{ mensaje() }}</div>
+}
+
+@if (mostrarForm()) {
+  <div class="card border shadow-sm mb-3">
+    <div class="card-body">
+      <form (ngSubmit)="guardar()">
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Razón social *</label>
+            <input class="form-control" name="razon_social" [(ngModel)]="form.razon_social" maxlength="150" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">NIT *</label>
+            <input class="form-control" name="nit" [(ngModel)]="form.nit" maxlength="50" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Email</label>
+            <input class="form-control" name="email" type="email" [(ngModel)]="form.email" maxlength="120">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Teléfono</label>
+            <input class="form-control" name="telefono" [(ngModel)]="form.telefono" maxlength="30">
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Dirección</label>
+            <input class="form-control" name="direccion" [(ngModel)]="form.direccion" maxlength="255">
+          </div>
+        </div>
+        <div class="mt-3 d-flex gap-2">
+          <button type="submit" class="btn btn-iub text-white" [disabled]="cargando()">{{ editandoId === null ? 'Crear' : 'Guardar cambios' }}</button>
+          <button type="button" class="btn btn-outline-secondary" (click)="cancelar()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<div class="card border shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>ID</th><th>Razón social</th><th>NIT</th><th>Email</th><th>Teléfono</th><th>Estado</th><th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of proveedores(); track p.id) {
+            <tr>
+              <td>{{ p.id }}</td>
+              <td>{{ p.razon_social }}</td>
+              <td>{{ p.nit }}</td>
+              <td>{{ p.email || '—' }}</td>
+              <td>{{ p.telefono || '—' }}</td>
+              <td><span class="badge text-bg-{{ p.estado === 1 ? 'success' : 'secondary' }}">{{ p.estado === 1 ? 'Activo' : 'Inactivo' }}</span></td>
+              <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="editar(p)">Editar</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" (click)="eliminar(p)">Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="text-center text-muted py-4">Sin proveedores registrados.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

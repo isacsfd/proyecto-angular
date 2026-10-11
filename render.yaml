@@ -33,3 +33,14 @@ services:
       # Duración del token (horas).
       - key: MM_TOKEN_HORAS
         value: "8"
+      # Conexión MySQL de XAMPP para Proveedores/Compras/Detalles (FastAPI).
+      - key: MM_MYSQL_HOST
+        sync: false
+      - key: MM_MYSQL_PORT
+        value: "3306"
+      - key: MM_MYSQL_USER
+        sync: false
+      - key: MM_MYSQL_PASSWORD
+        sync: false
+      - key: MM_MYSQL_DATABASE
+        sync: false

@@ -1,9 +1,13 @@
 import { firstValueFrom } from 'rxjs';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { NgxDatatableModule } from '@swimlane/ngx-datatable';
+
 import { ApiService } from '../../../../core/services/api.service';
 import { SugerenciasService } from '../../../../core/services/sugerencias.service';
+import { AlertaService } from '../../../../core/services/alerta.service';
 import { BuscarSugerencias } from '../../../../shared/buscar-sugerencias/buscar-sugerencias';
+import { PaginadorNgx } from '../../../../shared/paginador-ngx/paginador-ngx';
 import { Libro, LibroResultado } from '../../../../core/models';
 
 const CATEGORIAS: { clave: string; etiqueta: string }[] = [
@@ -20,12 +24,13 @@ const CATEGORIAS: { clave: string; etiqueta: string }[] = [
 
 @Component({
   selector: 'app-user-catalogo',
-  imports: [FormsModule, BuscarSugerencias],
+  imports: [FormsModule, BuscarSugerencias, NgxDatatableModule, PaginadorNgx],
   templateUrl: './catalogo.html',
   styleUrl: './catalogo.css',
 })
 export class UserCatalogo {
   private readonly api = inject(ApiService);
+  private readonly alerta = inject(AlertaService);
   readonly sugerencias = inject(SugerenciasService);
 
   libros = signal<Libro[]>([]);
@@ -37,16 +42,48 @@ export class UserCatalogo {
   error = signal('');
   ultimoModo = signal<'todos' | 'categoria' | 'ia'>('todos');
 
+  // Paginación local de la tabla (lista y categorías).
+  filtroTabla = signal('');
+  offset = signal(0);
+  limite = signal(10);
+
+  readonly filasFiltradas = computed(() => {
+    const termino = this.filtroTabla().trim().toLowerCase();
+    const filas = this.libros();
+    if (!termino) return filas;
+    return filas.filter((l) =>
+      [l.Titulo, l.Autor, l.Programa ?? '', l.Editorial ?? '', l.sede ?? ''].join(' ').toLowerCase().includes(termino),
+    );
+  });
+
+  readonly filasPagina = computed(() => {
+    const filas = this.filasFiltradas();
+    const inicio = this.offset() * this.limite();
+    return filas.slice(inicio, inicio + this.limite());
+  });
+
+  readonly totalPaginas = computed(() => Math.max(1, Math.ceil(this.filasFiltradas().length / this.limite())));
+
   readonly categorias = CATEGORIAS;
 
   constructor() {
     this.cargarTodos();
     this.sugerencias.cargar();
+    effect(() => {
+      void this.filtroTabla();
+      this.offset.set(0);
+    });
+    effect(() => {
+      if (this.offset() >= this.totalPaginas()) {
+        this.offset.set(Math.max(0, this.totalPaginas() - 1));
+      }
+    });
   }
 
   async cargarTodos(): Promise<void> {
     this.cargando.set(true);
     this.error.set('');
+    this.offset.set(0);
     try {
       this.libros.set(await firstValueFrom(this.api.listarLibros()));
       this.resultadosIA.set([]);
@@ -54,7 +91,7 @@ export class UserCatalogo {
       this.categoriaSeleccionada = '';
       this.ultimoModo.set('todos');
     } catch (err: any) {
-      this.error.set(err?.error?.detail || 'Error al cargar el catálogo.');
+      this.error.set(err?.error?.detail || 'Error al cargar el catálogo. Verifique la conexión.');
     } finally {
       this.cargando.set(false);
     }
@@ -64,6 +101,7 @@ export class UserCatalogo {
     this.cargando.set(true);
     this.error.set('');
     this.categoriaSeleccionada = clave;
+    this.offset.set(0);
     try {
       this.libros.set(await firstValueFrom(this.api.listarLibrosPorCategoria(clave)));
       this.resultadosIA.set([]);
@@ -90,7 +128,7 @@ export class UserCatalogo {
       this.categoriaSeleccionada = '';
       this.ultimoModo.set('ia');
     } catch (err: any) {
-      this.error.set(err?.error?.detail || 'Error en la búsqueda semántica.');
+      await this.alerta.error(err?.error?.detail || 'Error en la búsqueda semántica.');
     } finally {
       this.buscando.set(false);
     }

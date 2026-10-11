@@ -28,4 +28,4 @@ desktop.ini
 
 # ── Logs / temporales ──────────────────────────────────
 *.log
-*.tmp
+*.tmp~$*

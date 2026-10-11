@@ -22,6 +22,7 @@ from models.models import UserTable, LibraryAccess, Rol
 from requests.user_request import UserCreateRequest
 from routers.access_router import access_router
 from routers.ia_router import ia_router
+from routers.compras_router import router as compras_router
 from fastapi.staticfiles import StaticFiles
 from passlib.context import CryptContext
 from auth import (
@@ -53,10 +54,16 @@ def hash_password(plain: str) -> str:
     return pwd_context.hash(plain)
 
 def verify_password(plain: str, hashed: str) -> bool:
-    if hashed.startswith(("$2a$", "$2b$", "$2y$")):
+    """Valida únicamente hashes bcrypt.
+
+    No acepta contraseñas en texto plano como alternativa silenciosa: si el
+    hash almacenado no empieza por $2a$/$2b$/$2y$, la verificación falla y la
+    migración legada se gestiona explícitamente en el login.
+    """
+    if hashed and hashed.startswith(("$2a$", "$2b$", "$2y$")):
         # bcrypt es compatible entre prefijos $2a$, $2b$ y $2y$
         return pwd_context.verify(plain, hashed)
-    return plain == hashed   # compatibilidad con usuarios viejos (hash plano)
+    return False
 
 # ─── Base de datos ────────────────────────────────────────────
 database.Base.metadata.create_all(bind=engine)
@@ -98,6 +105,7 @@ app.add_middleware(
 
 app.include_router(access_router)
 app.include_router(ia_router)
+app.include_router(compras_router)
 
 def get_db():
     db = SessionLocal()
@@ -236,7 +244,24 @@ def login(data: LoginData, request: Request, db: Session = Depends(get_db)):
         UserTable.identificacion == data.identificacion
     ).first()
 
-    if user is None or not verify_password(data.password, user.password):
+    # Validación de credenciales (bcrypt). Ventana explícita de migración para
+    # hashes legados en texto plano: nunca se aceptan en silencio; solo se
+    # migran a bcrypt si MM_HASH_PLANO_PERMITIDO=1 y la contraseña coincide.
+    credenciales_validas = False
+    if user is not None:
+        clave_storage = user.password or ""
+        if clave_storage.startswith(("$2a$", "$2b$", "$2y$")):
+            credenciales_validas = verify_password(data.password, clave_storage)
+        elif (
+            os.getenv("MM_HASH_PLANO_PERMITIDO") == "1"
+            and clave_storage == data.password
+        ):
+            # Migración en el primer inicio de sesión: se re-hashea a bcrypt.
+            user.password = hash_password(data.password)
+            db.commit()
+            credenciales_validas = True
+
+    if user is None or not credenciales_validas:
         raise HTTPException(
             status_code=401,
             detail="Identificación o contraseña incorrectos",

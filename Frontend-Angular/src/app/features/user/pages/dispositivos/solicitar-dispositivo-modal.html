@@ -1,0 +1,54 @@
+<div class="modal-backdrop show"></div>
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Solicitar préstamo de dispositivo</h5>
+        <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        @if (dispositivo; as d) {
+          <div class="mb-3 d-flex align-items-center gap-2">
+            <i class="bi fs-3 text-iub" [class.bi-laptop]="d.tipo === 'Computador'" [class.bi-tablet]="d.tipo === 'Tablet'"></i>
+            <div>
+              <div class="fw-semibold">{{ d.marca }} {{ d.modelo }}</div>
+              <small class="text-muted">{{ d.tipo }} · {{ d.sede }}</small>
+            </div>
+          </div>
+        }
+
+        @if (mensaje()) {
+          <div class="alert alert-danger py-2" role="alert">{{ mensaje() }}</div>
+        }
+
+        <p class="text-muted small">
+          El préstamo de dispositivos usa una <strong>franja horaria de máximo 2 horas</strong>,
+          entre las <strong>8:00 a.m. y las 8:00 p.m.</strong>. Al enviar la solicitud quedará en
+          "Pendiente" y un administrador la aprobará.
+        </p>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Inicio de la franja *</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="fechaInicio">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fin de la franja *</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="fechaFin">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observaciones</label>
+            <textarea class="form-control" rows="2" [(ngModel)]="observaciones" placeholder="Opcional..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="cerrarModal()" [disabled]="guardando">Cancelar</button>
+        <button type="button" class="btn btn-iub text-white" [disabled]="guardando" (click)="enviar()">
+          @if (guardando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          {{ guardando ? 'Enviando...' : 'Enviar solicitud' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

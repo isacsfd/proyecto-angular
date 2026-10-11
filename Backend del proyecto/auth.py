@@ -30,8 +30,21 @@ from database import get_db
 from models.models import UserTable, Rol, Modulo, ModuloRol
 
 # ─── Configuración ────────────────────────────────────────────────────────────
-# En producción define MM_JWT_SECRET con una cadena aleatoria larga.
-SECRET_KEY = os.getenv("MM_JWT_SECRET", "dev_insegura_cambiar_en_produccion")
+# En producción (RENDER) MM_JWT_SECRET es OBLIGATORIA: nunca se usa un valor por
+# defecto. Para desarrollo local se usa una clave fija documentada, que en
+# ningún caso debe emplearse en producción.
+def _secreto_jwt() -> str:
+    clave = os.getenv("MM_JWT_SECRET")
+    if clave:
+        return clave
+    if os.getenv("RENDER"):
+        raise RuntimeError(
+            "MM_JWT_SECRET no está definida en producción. Configúrela en "
+            "Render (Settings → Environment) con un valor aleatorio largo."
+        )
+    return "clave_desarrollo_no_usar_en_produccion"
+
+SECRET_KEY = _secreto_jwt()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = int(os.getenv("MM_TOKEN_HORAS", "8"))
 

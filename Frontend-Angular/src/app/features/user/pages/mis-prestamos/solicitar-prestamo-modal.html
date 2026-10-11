@@ -1,0 +1,41 @@
+<div class="modal-backdrop show"></div>
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Solicitar préstamo de libro</h5>
+        <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        @if (mensaje()) {
+          <div class="alert alert-danger py-2" role="alert">{{ mensaje() }}</div>
+        }
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Libro *</label>
+            <app-seleccion-libro
+              [(libroId)]="form.book_id"
+              [sede]="sedeLibros"
+              placeholder="Buscar libro por título o autor..."
+            ></app-seleccion-libro>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha de préstamo *</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="form.loan_date">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Devolución * (4 a 6 días)</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="form.delivery_date">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="cerrarModal()" [disabled]="guardando">Cancelar</button>
+        <button type="button" class="btn btn-iub text-white" [disabled]="guardando" (click)="enviar()">
+          @if (guardando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+          {{ guardando ? 'Enviando...' : 'Enviar solicitud' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

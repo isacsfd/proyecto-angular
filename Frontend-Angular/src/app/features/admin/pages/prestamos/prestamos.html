@@ -1,8 +1,8 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
   <h2 class="mb-0">Gestión de Préstamos</h2>
-  <div class="d-flex gap-2">
-    <button class="btn btn-outline-primary" (click)="abrirFormLibro()"><i class="bi bi-plus-lg me-1"></i>Préstamo de libro</button>
-    <button class="btn btn-iub text-white" (click)="abrirFormDispositivo()"><i class="bi bi-plus-lg me-1"></i>Préstamo de dispositivo</button>
+  <div class="d-flex flex-wrap gap-2">
+    <button class="btn btn-outline-primary" (click)="abrirModalRegistrarLibro()"><i class="bi bi-plus-lg me-1"></i>Préstamo de libro</button>
+    <button class="btn btn-iub text-white" (click)="abrirModalRegistrarDispo()"><i class="bi bi-plus-lg me-1"></i>Préstamo de dispositivo</button>
   </div>
 </div>
 
@@ -13,135 +13,93 @@
   </div>
 }
 
-@if (mostrarFormLibro()) {
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white fw-semibold">Nuevo préstamo de libro</div>
-    <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Usuario</label>
-          <select class="form-select" [(ngModel)]="formLibro.user_id">
-            <option [ngValue]="null">Seleccione...</option>
-            @for (u of usuarios(); track u.id) { <option [ngValue]="u.id">{{ u.nombre }} ({{ u.identificacion }})</option> }
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Libro</label>
-          <app-seleccion-libro [(libroId)]="formLibro.book_id" [sede]="sedeLibros()" placeholder="Buscar libro por título o autor..."></app-seleccion-libro>
-        </div>
-        <div class="col-md-2"><label class="form-label fw-semibold">Fecha préstamo</label><input type="datetime-local" class="form-control" [(ngModel)]="formLibro.loan_date"></div>
-        <div class="col-md-2"><label class="form-label fw-semibold">Fecha entrega</label><input type="datetime-local" class="form-control" [(ngModel)]="formLibro.delivery_date"></div>
-      </div>
-      <div class="mt-3 d-flex gap-2">
-        <button class="btn btn-iub text-white" (click)="guardarLibro()">Guardar</button>
-        <button class="btn btn-outline-secondary" (click)="mostrarFormLibro.set(false)">Cancelar</button>
-      </div>
-    </div>
-  </div>
-}
-
-@if (mostrarFormDispositivo()) {
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white fw-semibold">Nuevo préstamo de dispositivo</div>
-    <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Usuario</label>
-          <select class="form-select" [(ngModel)]="formDispositivo.user_id">
-            <option [ngValue]="null">Seleccione...</option>
-            @for (u of usuarios(); track u.id) { <option [ngValue]="u.id">{{ u.nombre }} ({{ u.identificacion }})</option> }
-          </select>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Dispositivo</label>
-          <select class="form-select" [(ngModel)]="formDispositivo.dispositivo_id">
-            <option [ngValue]="null">Seleccione...</option>
-            @for (d of dispositivos(); track d.id) { <option [ngValue]="d.id">{{ d.tipo }} {{ d.marca }} {{ d.modelo }} ({{ d.sede }})</option> }
-          </select>
-        </div>
-        <div class="col-md-2"><label class="form-label fw-semibold">Inicio franja</label><input type="datetime-local" class="form-control" [(ngModel)]="formDispositivo.fecha_prestamo"></div>
-        <div class="col-md-2"><label class="form-label fw-semibold">Fin franja</label><input type="datetime-local" class="form-control" [(ngModel)]="formDispositivo.fecha_devolucion"></div>
-        <div class="col-md-2"><label class="form-label fw-semibold">Observaciones</label><input class="form-control" [(ngModel)]="formDispositivo.observaciones"></div>
-      </div>
-      <small class="text-muted d-block mt-2">Franja horaria de máximo 2 horas (servicio de 8:00 a.m. a 8:00 p.m.).</small>
-      <div class="mt-3 d-flex gap-2">
-        <button class="btn btn-iub text-white" (click)="guardarDispositivo()">Guardar</button>
-        <button class="btn btn-outline-secondary" (click)="mostrarFormDispositivo.set(false)">Cancelar</button>
-      </div>
-    </div>
-  </div>
-}
-
 @if (cargando()) {
   <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
 } @else {
   <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-white fw-semibold">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <span><i class="bi bi-journal-text me-1"></i>Préstamos de libros</span>
-        <div class="btn-group">
-          <button class="btn btn-sm btn-outline-danger" (click)="exportarPDFLibros()"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
-          <button class="btn btn-sm btn-outline-success" (click)="exportarExcelLibros()"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
+    <div class="card-header bg-white fw-semibold d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span><i class="bi bi-journal-text me-1"></i>Préstamos de libros</span>
+      <div class="btn-group">
+        <button class="btn btn-sm btn-outline-danger" (click)="exportarPDFLibros()"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
+        <button class="btn btn-sm btn-outline-success" (click)="exportarExcelLibros()"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <app-paginador-ngx
+        [count]="filasPrestamosLibros().length"
+        [offset]="offsetLibros()"
+        [limit]="limiteLibros()"
+        (offsetChange)="offsetLibros.set($event)"
+        (limitChange)="limiteLibros.set($event)"
+      >
+        <div class="input-group input-group-sm" style="max-width: 260px;">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="search" placeholder="Buscar en la tabla..." [(ngModel)]="filtro" aria-label="Buscar en la tabla">
         </div>
-      </div>
-    </div>
-    <div class="card-body border-bottom">
-      <app-buscar-sugerencias
-        style="max-width: 420px;"
-        [libros]="sugerencias.libros()"
-        [usuarios]="sugerencias.usuarios()"
-        [mostrarUsuarios]="true"
-        placeholder="Buscar en préstamos, libros o estudiantes..."
-        [(termino)]="filtro"
-      ></app-buscar-sugerencias>
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" appDatatable [dtData]="prestamos()" [dtBuscar]="filtro()">
-          <thead class="table-light">
-            <tr><th>Usuario</th><th>Libro</th><th>Préstamo</th><th>Entrega</th><th>Estado</th><th>Solicitud</th><th class="text-end">Acciones</th></tr>
-          </thead>
-          <tbody>
-            @for (p of prestamos(); track p.id) {
-              <tr>
-                <td>{{ p.user }}</td>
-                <td>{{ p.book }}</td>
-                <td>{{ p.loan_date | date: 'short' }}</td>
-                <td>{{ p.delivery_date | date: 'short' }}</td>
-                <td><span class="badge {{ badgePrestamo(p.state) }}">{{ p.state }}</span></td>
-                <td><span class="badge {{ badgeSolicitud(p.prestamo_state) }}">{{ p.prestamo_state }}</span></td>
-                <td class="text-end">
-                  @if (p.prestamo_state === 'No Aprobado') {
-                    <button class="btn btn-sm btn-success me-1" aria-label="Aprobar préstamo de libro" (click)="aprobar(p)"><i class="bi bi-check-lg"></i></button>
-                    <button class="btn btn-sm btn-danger me-1" aria-label="Rechazar préstamo de libro" (click)="rechazar(p)"><i class="bi bi-x-lg"></i></button>
-                  }
-                  @if (p.state === 'Activo') {
-                    <button class="btn btn-sm btn-outline-success" (click)="devolver(p)"><i class="bi bi-arrow-counterclockwise"></i> Devolver</button>
-                  }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+      </app-paginador-ngx>
+
+      @if (filasPrestamosLibros().length === 0) {
+        <div class="text-center text-muted py-4">No hay préstamos de libros que coincidan con la búsqueda.</div>
+      } @else {
+        <ngx-datatable
+          class="material"
+          [rows]="filasPrestamosLibros()"
+          [columnMode]="'force'"
+          [headerHeight]="40"
+          [footerHeight]="0"
+          [rowHeight]="'auto'"
+          [offset]="offsetLibros()"
+          [limit]="limiteLibros()"
+          (page)="offsetLibros.set($event.offset)"
+        >
+          <ngx-datatable-column name="Usuario" prop="user"></ngx-datatable-column>
+          <ngx-datatable-column name="Libro" prop="book"></ngx-datatable-column>
+          <ngx-datatable-column name="Préstamo" prop="loan_date">
+            <ng-template let-row="row">{{ row.loan_date | date: 'short' }}</ng-template>
+          </ngx-datatable-column>
+          <ngx-datatable-column name="Entrega" prop="delivery_date">
+            <ng-template let-row="row">{{ row.delivery_date | date: 'short' }}</ng-template>
+          </ngx-datatable-column>
+          <ngx-datatable-column name="Estado" prop="state">
+            <ng-template let-row="row">
+              <span class="badge {{ badgePrestamo(row.state) }}">{{ row.state }}</span>
+            </ng-template>
+          </ngx-datatable-column>
+          <ngx-datatable-column name="Solicitud" prop="prestamo_state">
+            <ng-template let-row="row">
+              <span class="badge {{ badgeSolicitud(row.prestamo_state) }}">{{ row.prestamo_state }}</span>
+            </ng-template>
+          </ngx-datatable-column>
+          <ngx-datatable-column name="Acciones" [sortable]="false" [flexGrow]="1">
+            <ng-template let-row="row">
+              <button class="btn btn-sm btn-outline-primary me-1" aria-label="Consultar préstamo" (click)="abrirModalConsultarLibro(row)"><i class="bi bi-eye"></i></button>
+              @if (row.prestamo_state === 'No Aprobado') {
+                <button class="btn btn-sm btn-success me-1" aria-label="Aprobar préstamo de libro" (click)="aprobar(row)"><i class="bi bi-check-lg"></i></button>
+                <button class="btn btn-sm btn-danger me-1" aria-label="Rechazar préstamo de libro" (click)="rechazar(row)"><i class="bi bi-x-lg"></i></button>
+              }
+              @if (row.state === 'Activo') {
+                <button class="btn btn-sm btn-outline-success" (click)="devolver(row)"><i class="bi bi-arrow-counterclockwise"></i> Devolver</button>
+              }
+            </ng-template>
+          </ngx-datatable-column>
+        </ngx-datatable>
+      }
     </div>
   </div>
 
   <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white fw-semibold">
-      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <span><i class="bi bi-laptop me-1"></i>Préstamos de dispositivos</span>
-        <div class="btn-group">
-          <button class="btn btn-sm btn-outline-danger" (click)="exportarPDFDispositivos()"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
-          <button class="btn btn-sm btn-outline-success" (click)="exportarExcelDispositivos()"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
-        </div>
+    <div class="card-header bg-white fw-semibold d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span><i class="bi bi-laptop me-1"></i>Préstamos de dispositivos</span>
+      <div class="btn-group">
+        <button class="btn btn-sm btn-outline-danger" (click)="exportarPDFDispositivos()"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
+        <button class="btn btn-sm btn-outline-success" (click)="exportarExcelDispositivos()"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
       </div>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0" appDatatable [dtData]="prestamosDispositivos()" [dtBuscar]="filtro()">
           <thead class="table-light">
-            <tr><th>Usuario</th><th>Dispositivo</th><th>Fecha</th><th>Estado</th><th>Observaciones</th><th class="text-end">Acciones</th></tr>
+            <tr><th>Usuario</th><th>Dispositivo</th><th>Franja</th><th>Estado</th><th>Observaciones</th><th class="text-end">Acciones</th></tr>
           </thead>
           <tbody>
             @for (p of prestamosDispositivos(); track p.id) {
@@ -152,6 +110,7 @@
                 <td><span class="badge {{ badgePrestamo(p.estado) }}">{{ p.estado }}</span></td>
                 <td>{{ p.observaciones || '—' }}</td>
                 <td class="text-end">
+                  <button class="btn btn-sm btn-outline-primary me-1" aria-label="Consultar préstamo de dispositivo" (click)="abrirModalConsultarDispo(p)"><i class="bi bi-eye"></i></button>
                   @if (p.estado === 'Pendiente') {
                     <button class="btn btn-sm btn-success me-1" (click)="aprobarDispositivo(p)"><i class="bi bi-check-lg"></i> Aprobar</button>
                     <button class="btn btn-sm btn-outline-danger" aria-label="Rechazar préstamo de dispositivo" (click)="rechazarDispositivo(p)"><i class="bi bi-x-lg"></i></button>
@@ -168,4 +127,26 @@
       </div>
     </div>
   </div>
+}
+
+@if (mostrarModalLibro()) {
+  <app-prestamo-libro-modal
+    [prestamo]="modalPrestamo()"
+    [usuarios]="modalUsuariosLibro()"
+    [guardando]="guardandoModalLibro()"
+    [sedeLibros]="sedeLibros()"
+    (guardar)="onGuardarLibro($event)"
+    (cerrar)="cerrarModalLibro()"
+  ></app-prestamo-libro-modal>
+}
+
+@if (mostrarModalDispo()) {
+  <app-prestamo-dispositivo-modal
+    [prestamo]="modalDispo()"
+    [dispositivos]="dispositivos()"
+    [usuarios]="usuarios()"
+    [guardando]="guardandoModalDispo()"
+    (guardar)="onGuardarDispostivo($event)"
+    (cerrar)="cerrarModalDispo()"
+  ></app-prestamo-dispositivo-modal>
 }

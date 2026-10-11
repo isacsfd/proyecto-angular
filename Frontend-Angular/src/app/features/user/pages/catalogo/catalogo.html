@@ -71,27 +71,49 @@
 }
 
 @if (ultimoModo() === 'todos' || ultimoModo() === 'categoria') {
-  <div class="row g-3">
-    @for (l of libros(); track l.ID) {
-      <div class="col-md-6 col-xl-4">
-        <div class="card h-100 card-hover border-0 shadow-sm">
-          <div class="card-body">
-            <h6 class="card-title mb-1">{{ l.Titulo }}</h6>
-            <p class="text-muted small mb-2">{{ l.Autor }} · {{ l.Programa }}</p>
-            <span class="badge" [class.text-bg-danger]="(l.Ejemplar ?? 0) <= 0" [class.text-bg-success]="(l.Ejemplar ?? 0) > 0">
-              {{ (l.Ejemplar ?? 0) > 0 ? l.Ejemplar + ' disponible(s)' : 'Sin ejemplares' }}
-            </span>
-            @if (l.Editorial) {
-              <small class="text-muted d-block mt-1">{{ l.Editorial }} · {{ l['Año'] }}</small>
-            }
-          </div>
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <app-paginador-ngx
+        [count]="filasFiltradas().length"
+        [offset]="offset()"
+        [limit]="limite()"
+        (offsetChange)="offset.set($event)"
+        (limitChange)="limite.set($event)"
+      >
+        <div class="input-group input-group-sm" style="max-width: 260px;">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input class="form-control" type="search" placeholder="Buscar en la tabla..." [(ngModel)]="filtroTabla" aria-label="Buscar en la tabla">
         </div>
-      </div>
-    }
-    @empty {
-      <div class="col-12">
-        <p class="text-muted text-center py-4">No hay libros para mostrar.</p>
-      </div>
-    }
+      </app-paginador-ngx>
+
+      @if (filasFiltradas().length === 0) {
+        <div class="text-center text-muted py-4">No hay libros que coincidan con la búsqueda.</div>
+      } @else {
+        <ngx-datatable
+          class="material"
+          [rows]="filasPagina()"
+          [columnMode]="'force'"
+          [headerHeight]="40"
+          [footerHeight]="0"
+          [rowHeight]="'auto'"
+          [offset]="0"
+          [limit]="limite()"
+        >
+          <ngx-datatable-column name="Título" prop="Titulo"></ngx-datatable-column>
+          <ngx-datatable-column name="Autor" prop="Autor"></ngx-datatable-column>
+          <ngx-datatable-column name="Programa" prop="Programa"></ngx-datatable-column>
+          <ngx-datatable-column name="Editorial" prop="Editorial"></ngx-datatable-column>
+          <ngx-datatable-column name="Año" prop="Año"></ngx-datatable-column>
+          <ngx-datatable-column name="Sede" prop="sede"></ngx-datatable-column>
+          <ngx-datatable-column name="Disponibilidad" prop="Ejemplar">
+            <ng-template let-row="row">
+              <span class="badge" [class.text-bg-danger]="(row.Ejemplar ?? 0) <= 0" [class.text-bg-success]="(row.Ejemplar ?? 0) > 0">
+                {{ (row.Ejemplar ?? 0) > 0 ? row.Ejemplar + ' disponible(s)' : 'Sin ejemplares' }}
+              </span>
+            </ng-template>
+          </ngx-datatable-column>
+        </ngx-datatable>
+      }
+    </div>
   </div>
 }

@@ -16,6 +16,8 @@ export const routes: Routes = [
       { path: 'prestamos', canActivate: [moduloGuard('gestion_prestamos')], loadComponent: () => import('./features/admin/pages/prestamos/prestamos').then((m) => m.AdminPrestamos) },
       { path: 'estadisticas', canActivate: [moduloGuard('estadisticas')], loadComponent: () => import('./features/admin/pages/estadisticas/estadisticas').then((m) => m.AdminEstadisticas) },
       { path: 'ingresos', canActivate: [moduloGuard('ingresos')], loadComponent: () => import('./features/admin/pages/ingresos/ingresos').then((m) => m.AdminIngresos) },
+      { path: 'proveedores', canActivate: [moduloGuard('gestion_proveedores')], loadComponent: () => import('./features/admin/pages/proveedores/proveedores').then((m) => m.AdminProveedores) },
+      { path: 'compras', canActivate: [moduloGuard('gestion_compras')], loadComponent: () => import('./features/admin/pages/compras/compras').then((m) => m.AdminCompras) },
     ],
   },
 

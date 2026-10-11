@@ -1,0 +1,88 @@
+<div class="modal-backdrop show"></div>
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ esNuevo() ? 'Registrar préstamo de libro' : 'Consultar préstamo' }}</h5>
+        <button type="button" class="btn-close" aria-label="Cerrar" (click)="cancelar()"></button>
+      </div>
+      <div class="modal-body">
+        @if (mensaje()) {
+          <div class="alert alert-danger py-2" role="alert">{{ mensaje() }}</div>
+        }
+
+        @if (esNuevo()) {
+          <div>
+            <div class="row g-3">
+              <div class="col-md-5">
+                <label class="form-label fw-semibold">Usuario *</label>
+                <select class="form-select" [(ngModel)]="form.user_id" name="user_id">
+                  <option [ngValue]="null">Seleccione...</option>
+                  @for (u of usuarios; track u.id) {
+                    <option [ngValue]="u.id">{{ u.nombre }} ({{ u.identificacion }})</option>
+                  }
+                </select>
+              </div>
+              <div class="col-md-7">
+                <label class="form-label fw-semibold">Libro *</label>
+                <app-seleccion-libro
+                  [(libroId)]="form.book_id"
+                  [sede]="sedeLibros"
+                  placeholder="Buscar libro por título o autor..."
+                ></app-seleccion-libro>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fecha de préstamo *</label>
+                <input type="datetime-local" class="form-control" [(ngModel)]="form.loan_date" name="loan_date">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fecha de entrega * (4 a 6 días)</label>
+                <input type="datetime-local" class="form-control" [(ngModel)]="form.delivery_date" name="delivery_date">
+              </div>
+            </div>
+            <div class="mt-3 d-flex gap-2">
+              <button type="button" class="btn btn-iub text-white" [disabled]="guardando" (click)="guardarNuevo()">
+                @if (guardando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                {{ guardando ? 'Guardando...' : 'Guardar préstamo' }}
+              </button>
+              <button type="button" class="btn btn-outline-secondary" (click)="cancelar()" [disabled]="guardando">Cerrar</button>
+            </div>
+          </div>
+        } @else {
+          @if (prestamo; as p) {
+            <div class="row g-2 mb-3">
+              <div class="col-md-4"><span class="text-muted small">Usuario</span><div class="fw-semibold">{{ p.user }}</div></div>
+              <div class="col-md-8"><span class="text-muted small">Libro</span><div class="fw-semibold">{{ p.book }}</div></div>
+              <div class="col-md-3">
+                <span class="text-muted small">Préstamo</span>
+                <div>{{ p.loan_date | date: 'short' }}</div>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Entrega</span>
+                <div>{{ p.delivery_date | date: 'short' }}</div>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Estado</span>
+                <div><span class="badge {{ p.state === 'Activo' ? 'text-bg-primary' : p.state === 'Devuelto' ? 'text-bg-success' : 'text-bg-danger' }}">{{ p.state }}</span></div>
+              </div>
+              <div class="col-md-3">
+                <span class="text-muted small">Solicitud</span>
+                <div><span class="badge {{ p.prestamo_state === 'Aprobado' ? 'text-bg-success' : p.prestamo_state === 'Rechazado' ? 'text-bg-danger' : 'text-bg-warning' }}">{{ p.prestamo_state }}</span></div>
+              </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              @if (puedeAprobar()) {
+                <button type="button" class="btn btn-success" [disabled]="guardando" (click)="aprobar(p)">Aprobar solicitud</button>
+                <button type="button" class="btn btn-outline-danger" [disabled]="guardando" (click)="rechazar(p)">Rechazar solicitud</button>
+              }
+              @if (puedeDevolver()) {
+                <button type="button" class="btn btn-outline-success" [disabled]="guardando" (click)="devolver(p)">Registrar devolución</button>
+              }
+              <button type="button" class="btn btn-outline-secondary" (click)="cancelar()" [disabled]="guardando">Cerrar</button>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  </div>
+</div>

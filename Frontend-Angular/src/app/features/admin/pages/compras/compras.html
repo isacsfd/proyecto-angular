@@ -1,0 +1,108 @@
+<div class="mb-3">
+  <h1 class="h4 mb-0">Compras</h1>
+</div>
+
+@if (mensaje()) {
+  <div class="alert alert-{{ tipoMensaje() }} py-2" role="alert">{{ mensaje() }}</div>
+}
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4">
+    <label class="form-label fw-semibold">Proveedor *</label>
+    <select class="form-select" name="proveedor_id" [(ngModel)]="formCompra.proveedor_id">
+      <option [ngValue]="0" disabled>Seleccione...</option>
+      @for (p of proveedores(); track p.id) {
+        <option [ngValue]="p.id">{{ p.razon_social }}</option>
+      }
+    </select>
+  </div>
+  <div class="col-lg-3">
+    <label class="form-label fw-semibold">N.º factura *</label>
+    <input class="form-control" name="numero_factura" [(ngModel)]="formCompra.numero_factura" maxlength="50" placeholder="Ej: FAC-001">
+  </div>
+  <div class="col-lg-3">
+    <label class="form-label fw-semibold">Fecha</label>
+    <input class="form-control" name="fecha" type="datetime-local" [(ngModel)]="formCompra.fecha">
+  </div>
+  <div class="col-lg-2 d-flex align-items-end">
+    <button type="button" class="btn btn-iub text-white w-100" [disabled]="cargando()" (click)="crear()">Crear compra</button>
+  </div>
+</div>
+
+<div class="card border shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Factura</th><th>Proveedor</th><th>Fecha</th><th class="text-end">Total</th><th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of compras(); track c.id) {
+            <tr [class.table-primary]="seleccionada()?.id === c.id">
+              <td>{{ c.numero_factura }}</td>
+              <td>{{ c.proveedor }}</td>
+              <td>{{ c.fecha }}</td>
+              <td class="text-end">{{ c.total | number : '1.2-2' }}</td>
+              <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="seleccionar(c)">Detalles</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" (click)="eliminarCompra(c)">Eliminar</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5" class="text-center text-muted py-4">Sin compras registradas.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (seleccionada(); as c) {
+  <div class="card border shadow-sm mt-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><strong>Detalles</strong> — {{ c.numero_factura }} ({{ c.proveedor }})</span>
+      <span class="badge text-bg-primary">Total: {{ c.total | number : '1.2-2' }}</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-2 mb-3">
+        <div class="col-md-5">
+          <input class="form-control form-control-sm" placeholder="Descripción *" name="descripcion" [(ngModel)]="formDetalle.descripcion" maxlength="200">
+        </div>
+        <div class="col-md-2">
+          <input class="form-control form-control-sm" type="number" min="1" placeholder="Cantidad" name="cantidad" [(ngModel)]="formDetalle.cantidad">
+        </div>
+        <div class="col-md-2">
+          <input class="form-control form-control-sm" type="number" min="0" placeholder="Precio unit." name="precio" [(ngModel)]="formDetalle.precio_unitario">
+        </div>
+        <div class="col-md-3">
+          <button type="button" class="btn btn-sm btn-iub text-white w-100" (click)="agregarDetalle()">Agregar detalle</button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr><th>ID</th><th>Descripción</th><th>Cant.</th><th>P. unit.</th><th>Subtotal</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (d of detalles(); track d.id) {
+              <tr>
+                <td>{{ d.id }}</td>
+                <td>{{ d.descripcion }}</td>
+                <td>{{ d.cantidad }}</td>
+                <td>{{ d.precio_unitario | number : '1.2-2' }}</td>
+                <td>{{ d.cantidad * d.precio_unitario | number : '1.2-2' }}</td>
+                <td class="text-end">
+                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="eliminarDetalle(d)">Eliminar</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="text-center text-muted py-3">Sin detalles. Agregue uno con el formulario.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+}

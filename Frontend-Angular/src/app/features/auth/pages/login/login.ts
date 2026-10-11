@@ -60,10 +60,7 @@ export class Login {
       if (!rolReal || rolReal !== this.rol) {
         // Rol seleccionado ≠ rol real: limpiar la sesión creada y NO navegar.
         this.auth.logout();
-        this.mostrar(
-          `El rol seleccionado (${this.etiquetaRol(this.rol)}) no coincide con el rol de su cuenta (${this.etiquetaRol(rolReal ?? '')}).`,
-          'danger',
-        );
+        this.mostrar('El rol seleccionado no coincide con tus credenciales.', 'danger');
         return;
       }
       this.mostrar('Inicio de sesión exitoso. Redirigiendo...', 'success');

@@ -1,0 +1,88 @@
+<div class="modal-backdrop show"></div>
+<div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ esNuevo() ? 'Registrar préstamo de dispositivo' : 'Consultar préstamo de dispositivo' }}</h5>
+        <button type="button" class="btn-close" aria-label="Cerrar" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        @if (mensaje()) {
+          <div class="alert alert-danger py-2" role="alert">{{ mensaje() }}</div>
+        }
+
+        @if (esNuevo()) {
+          @if (dispositivos.length === 0) {
+            <div class="alert alert-info py-2">Sin dispositivos disponibles para prestar.</div>
+          }
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Usuario *</label>
+              <select class="form-select" [(ngModel)]="form.user_id">
+                <option [ngValue]="null">Seleccione...</option>
+                @for (u of usuarios; track u.id) {
+                  <option [ngValue]="u.id">{{ u.nombre }} ({{ u.identificacion }})</option>
+                }
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Dispositivo *</label>
+              <select class="form-select" [(ngModel)]="form.dispositivo_id">
+                <option [ngValue]="null">Seleccione...</option>
+                @for (d of dispositivos; track d.id) {
+                  <option [ngValue]="d.id">{{ d.tipo }} {{ d.marca }} {{ d.modelo }} ({{ d.sede }})</option>
+                }
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Inicio de franja *</label>
+              <input type="datetime-local" class="form-control" [(ngModel)]="form.fecha_prestamo" (ngModelChange)="_inicializarFechas()">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Fin de franja *</label>
+              <input type="datetime-local" class="form-control" [(ngModel)]="form.fecha_devolucion">
+            </div>
+            <div class="col-12"><label class="form-label fw-semibold">Observaciones</label><input class="form-control" [(ngModel)]="form.observaciones"></div>
+          </div>
+          <small class="text-muted d-block mt-2">Franja horaria de máximo 2 horas (servicio de 8:00 a.m. a 8:00 p.m.).</small>
+        } @else {
+          @if (prestamo; as p) {
+            <div class="row g-2 mb-3">
+              <div class="col-md-4"><span class="text-muted small">Usuario</span><div class="fw-semibold">{{ p.user }}</div></div>
+              <div class="col-md-8"><span class="text-muted small">Dispositivo</span><div class="fw-semibold">{{ p.dispositivo }}</div></div>
+              <div class="col-md-6"><span class="text-muted small">Franja</span><div>{{ p.fecha_prestamo | date: 'short' }} → {{ p.fecha_devolucion | date: 'short' }}</div></div>
+              <div class="col-md-6">
+                <span class="text-muted small">Estado</span>
+                <div><span class="badge {{ p.estado === 'Activo' ? 'text-bg-primary' : p.estado === 'Pendiente' ? 'text-bg-warning' : p.estado === 'Completado' ? 'text-bg-success' : p.estado === 'Dañado' ? 'text-bg-danger' : 'text-bg-secondary' }}">{{ p.estado }}</span></div>
+              </div>
+              @if (p.observaciones) {
+                <div class="col-12"><span class="text-muted small">Observaciones</span><div>{{ p.observaciones }}</div></div>
+              }
+            </div>
+          }
+        }
+      </div>
+      <div class="modal-footer">
+        @if (esNuevo()) {
+          <button type="button" class="btn btn-outline-secondary" (click)="cerrarModal()" [disabled]="guardando">Cancelar</button>
+          <button type="button" class="btn btn-iub text-white" [disabled]="guardando" (click)="guardarNuevo()">
+            @if (guardando) { <span class="spinner-border spinner-border-sm me-1"></span> }
+            {{ guardando ? 'Guardando...' : 'Guardar préstamo' }}
+          </button>
+        } @else {
+          @if (prestamo; as p) {
+            @if (puedeGestionarPendiente()) {
+              <button type="button" class="btn btn-success" [disabled]="guardando" (click)="aprobar(p)">Aprobar</button>
+              <button type="button" class="btn btn-outline-danger" [disabled]="guardando" (click)="rechazar(p)">Rechazar</button>
+            }
+            @if (puedeGestionarActivo()) {
+              <button type="button" class="btn btn-outline-success" [disabled]="guardando" (click)="completar(p)">Registrar devolución</button>
+              <button type="button" class="btn btn-outline-danger" [disabled]="guardando" (click)="danar(p)">Marcar dañado</button>
+            }
+            <button type="button" class="btn btn-outline-secondary" (click)="cerrarModal()" [disabled]="guardando">Cerrar</button>
+          }
+        }
+      </div>
+    </div>
+  </div>
+</div>

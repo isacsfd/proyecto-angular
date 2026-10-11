@@ -13,6 +13,8 @@ export const MODULOS_ADMIN = [
   'gestion_prestamos',
   'estadisticas',
   'ingresos',
+  'gestion_proveedores',
+  'gestion_compras',
 ] as const;
 
 // Módulos del portal de usuario (rutas /inicio/...)
@@ -22,11 +24,17 @@ export const ROLES = ['super_administrador', 'Administrador', 'Funcionario', 'Do
 
 const TODOS = [...MODULOS_ADMIN, ...MODULOS_USER];
 
+// Administradores sin los módulos del submódulo de compras (proveedores/compras):
+// solo super y Administrador los gestionan; Funcionario no.
+const ADMIN_SIN_COMPRAS = [...MODULOS_ADMIN].filter(
+  (m) => m !== 'gestion_proveedores' && m !== 'gestion_compras',
+);
+
 /** Matriz rol -> módulos (igual que la sembrada en el backend). */
 export const MATRIZ: Record<string, string[]> = {
   super_administrador: TODOS,
   Administrador: TODOS,
-  Funcionario: TODOS,
+  Funcionario: [...ADMIN_SIN_COMPRAS, ...MODULOS_USER],
   Docente: ['inicio', 'catalogo', 'mis_prestamos', 'dispositivos'],
   Estudiante: ['inicio', 'catalogo', 'mis_prestamos', 'dispositivos'],
 };

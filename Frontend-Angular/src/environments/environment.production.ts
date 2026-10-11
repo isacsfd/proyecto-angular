@@ -11,6 +11,4 @@ export const environment = {
   production: true,
   // API principal (FastAPI desplegada). Ej: 'https://api-biblioteca-iub.onrender.com'
   apiUrl: 'https://biblioteca-iub-api.onrender.com',
-  // API Express + MySQL desplegada (opcional, si el frontend la consume).
-  expressUrl: 'https://api-express-PENDIENTE.invalid',
 };
