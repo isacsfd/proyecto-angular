@@ -32,7 +32,7 @@ export class AuthService {
   private readonly demo = inject(DemoService);
   private readonly apiUrl = environment.apiUrl;
 
-  usuario = signal<Usuario | null>(this.leerUsuarioGuardado());
+  usuario = signal<Usuario | null>(this.leerUsuarioGuardado() ?? this.demo.usuarioActual());
 
   private leerUsuarioGuardado(): Usuario | null {
     const raw = sessionStorage.getItem('userData');
@@ -72,6 +72,7 @@ export class AuthService {
 
   /** Elimina credenciales locales sin navegar (usado también por el interceptor). */
   limpiarSesionLocal(): void {
+    this.demo.desactivar();
     sessionStorage.removeItem('jwt_token');
     sessionStorage.removeItem('userData');
     sessionStorage.removeItem('sesionActiva');

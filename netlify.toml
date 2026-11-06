@@ -9,6 +9,20 @@
   NODE_VERSION = "24"
 
 # SPA Angular: cualquier ruta recargada se sirve por index.html (sin 404).
+# Recorte: los assets .js/.css inexistentes responden 404 (no caen al fallback).
+# Un asset existente siempre se sirve primero (Netlify no aplica redirects con
+# force=false cuando el archivo existe), y las rutas de Angular conservan el
+# fallback al no tener extensión de asset.
+[[redirects]]
+  from = "/*.js"
+  to = "/index.html"
+  status = 404
+
+[[redirects]]
+  from = "/*.css"
+  to = "/index.html"
+  status = 404
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
