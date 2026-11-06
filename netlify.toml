@@ -6,7 +6,7 @@
   publish = "dist/Frontend-Angular/browser"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "24"
 
 # SPA Angular: cualquier ruta recargada se sirve por index.html (sin 404).
 [[redirects]]
