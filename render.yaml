@@ -49,7 +49,10 @@ services:
   - type: web
     name: biblioteca-iub-express        # no modifica el FastAPI existente
     runtime: node
-    plan: free
+    # Plan de pago mínimo: API de compras siempre activa (sin spin-down de 15 min
+    # del plan Free) y siempre apta para hablar con el MySQL privado por la red
+    # privada (plan Free ya puede enviar; el requisito de pago es del DISCO).
+    plan: starter
     rootDir: express-api
     buildCommand: npm ci --omit=dev
     startCommand: npm start
