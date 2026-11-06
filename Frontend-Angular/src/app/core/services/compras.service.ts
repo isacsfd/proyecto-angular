@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -59,16 +59,23 @@ export interface DetallePayload {
 
 /**
  * ComprasService — consume Proveedores, Compras y Detalles desde la API
- * principal FastAPI (environment.apiUrl), que expone esos recursos sobre la
- * base MySQL de XAMPP. El token JWT se adjunta automáticamente por jwtInterceptor.
+ * API Express local cuando `environment.expressApiUrl` está configurada. En
+ * producción queda el fallback a FastAPI hasta autorizar un despliegue Express.
+ * El token JWT se adjunta automáticamente por jwtInterceptor.
  */
 @Injectable({ providedIn: 'root' })
 export class ComprasService {
   private readonly http = inject(HttpClient);
-  private readonly base = environment.apiUrl;
+  private readonly base = environment.expressApiUrl || environment.apiUrl;
+  private readonly noCacheOptions = {
+    headers: new HttpHeaders({
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
+    }),
+  };
 
   listarProveedores(): Observable<Proveedor[]> {
-    return this.http.get<Proveedor[]>(`${this.base}/api/proveedores`);
+    return this.http.get<Proveedor[]>(`${this.base}/api/proveedores`, this.noCacheOptions);
   }
   crearProveedor(datos: ProveedorPayload): Observable<Proveedor> {
     return this.http.post<Proveedor>(`${this.base}/api/proveedores`, datos);
@@ -81,7 +88,7 @@ export class ComprasService {
   }
 
   listarCompras(): Observable<Compra[]> {
-    return this.http.get<Compra[]>(`${this.base}/api/compras`);
+    return this.http.get<Compra[]>(`${this.base}/api/compras`, this.noCacheOptions);
   }
   crearCompra(datos: CompraPayload): Observable<Compra> {
     return this.http.post<Compra>(`${this.base}/api/compras`, datos);
@@ -94,10 +101,13 @@ export class ComprasService {
   }
 
   listarDetalles(compraId: number): Observable<DetalleCompra[]> {
-    return this.http.get<DetalleCompra[]>(`${this.base}/api/compras/${compraId}/detalles`);
+    return this.http.get<DetalleCompra[]>(`${this.base}/api/compras/${compraId}/detalles`, this.noCacheOptions);
   }
   crearDetalle(compraId: number, datos: DetallePayload): Observable<DetalleCompra> {
     return this.http.post<DetalleCompra>(`${this.base}/api/compras/${compraId}/detalles`, datos);
+  }
+  actualizarDetalle(id: number, datos: Partial<DetallePayload>): Observable<DetalleCompra> {
+    return this.http.put<DetalleCompra>(`${this.base}/api/detalles/${id}`, datos);
   }
   eliminarDetalle(id: number): Observable<{ mensaje: string }> {
     return this.http.delete<{ mensaje: string }>(`${this.base}/api/detalles/${id}`);

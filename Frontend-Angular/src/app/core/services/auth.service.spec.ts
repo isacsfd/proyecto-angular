@@ -102,4 +102,27 @@ describe('AuthService', () => {
     expect(auth.isDemo()).toBe(false);
     expect(auth.isAuthenticated()).toBe(false);
   });
+
+  function tokenConExp(exp: number): string {
+    return `header.${btoa(JSON.stringify({ exp }))}.firma`;
+  }
+
+  it('no considera autenticado un token expirado y limpia la sesión', () => {
+    const { auth } = setup();
+    sessionStorage.setItem('jwt_token', tokenConExp(Math.floor(Date.now() / 1000) - 60));
+    sessionStorage.setItem('sesionActiva', 'true');
+    sessionStorage.setItem('userData', JSON.stringify(USUARIO));
+
+    expect(auth.isAuthenticated()).toBe(false);
+    expect(auth.getToken()).toBeNull();
+    expect(sessionStorage.getItem('sesionActiva')).toBeNull();
+  });
+
+  it('mantiene la sesión con un token vigente', () => {
+    const { auth } = setup();
+    sessionStorage.setItem('jwt_token', tokenConExp(Math.floor(Date.now() / 1000) + 3600));
+    sessionStorage.setItem('sesionActiva', 'true');
+
+    expect(auth.isAuthenticated()).toBe(true);
+  });
 });

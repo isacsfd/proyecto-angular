@@ -21,6 +21,7 @@ Arquitectura "RAG-lite":
 from database import Libro, Prestamos
 from models.models import UserTable
 from services.ia import llm_client
+from services.ia import manuales
 from services.ia.busqueda_semantica import buscar
 from services.ia.recomendador import recomendar
 
@@ -45,6 +46,8 @@ INTENCIONES = {
                   "solicitar", "entrega", "mis prestamos", "cuando entrego", "estado de mi prestamo"],
     "dispositivos": ["computador", "tablet", "tableta", "dispositivo", "equipo", "pc", "portatil", "laptop",
                      "prestamo de equipo", "computadores"],
+    "manuales": ["manual", "manuales", "practicas", "practica", "posgrado", "pregrado", "acuerdo",
+                 "extension", "resolucion", "normativa", "convenio"],
     "reglamento": ["reglamento", "horario", "hora", "abierto", "abren", "cierran", "sancion", "multa",
                    "reglas", "normas", "permiso", "requisito", "qr"],
     "buscar": ["buscar", "busca", "libro", "titulo", "autor", "tema", "necesito", "quiero", "tienes",
@@ -149,6 +152,20 @@ def _respuesta_determinista(db, intencion: str, mensaje: str, user_id: int | Non
     )
 
 
+def _respuesta_manuales(hits: list[dict]) -> str:
+    """Redacta una respuesta extractiva a partir de los manuales indexados."""
+    lineas = []
+    for i, h in enumerate(hits, 1):
+        texto = h["texto"]
+        extracto = texto[:320].rsplit(" ", 1)[0] + ("…" if len(texto) > 320 else "")
+        lineas.append(f"{i}. {extracto}\n   Fuente: {h['fuente']} (pág. {h['pagina']}).")
+    return (
+        "Según los manuales institucionales:\n"
+        + "\n".join(lineas)
+        + "\n\nPara el detalle completo, consulta el documento en la sección de manuales."
+    )
+
+
 def _contexto_para_llm(db, intencion: str, mensaje: str, user_id: int | None) -> str:
     """Construye el contexto factual que el LLM usará para responder."""
     partes = []
@@ -198,14 +215,25 @@ def responder(
         return {"respuesta": "¿En qué puedo ayudarte?", "motor": "determinista", "intencion": "desconocido"}
 
     intencion = _detectar_intencion(mensaje)
+
+    # Recuperación de fragmentos de los manuales institucionales (RAG-lite).
+    hits = []
+    if intencion in ("manuales", "desconocido"):
+        hits = manuales.buscar(mensaje, top_k=3, min_score=0.085)
+    fuentes = [f"{h['fuente']} (pág. {h['pagina']})" for h in hits]
+
     contexto = _contexto_para_llm(db, intencion, mensaje, user_id)
+    if hits:
+        fragmentos = "\n\n".join(f"[{h['fuente']} pág. {h['pagina']}] {h['texto']}" for h in hits)
+        contexto += "\n\nMANUALES INSTITUCIONALES (fragmentos):\n" + fragmentos
 
     # 1. Intentar con el LLM local (Ollama)
     if llm_client.disponible():
         prompt = (
             f"Consulta del usuario: {mensaje}\n\n"
-            f"Contexto (datos reales):\n{contexto}\n\n"
-            "Responde de forma natural y útil."
+            f"Contexto (datos reales y manuales):\n{contexto}\n\n"
+            "Responde de forma natural y útil. Si usas información de los manuales, "
+            "indica la fuente y la página."
         )
         respuesta_llm = llm_client.chat(prompt, system=SYSTEM_PROMPT)
         if respuesta_llm:
@@ -213,11 +241,21 @@ def responder(
                 "respuesta": respuesta_llm,
                 "motor": "ollama",
                 "intencion": intencion,
+                "fuentes": fuentes,
             }
 
-    # 2. Fallback determinista
+    # 2. Fallback determinista: si hay manuales relevantes, responder con ellos.
+    if hits:
+        return {
+            "respuesta": _respuesta_manuales(hits),
+            "motor": "determinista",
+            "intencion": intencion if intencion != "desconocido" else "manuales",
+            "fuentes": fuentes,
+        }
+
     return {
         "respuesta": _respuesta_determinista(db, intencion, mensaje, user_id),
         "motor": "determinista",
         "intencion": intencion,
+        "fuentes": [],
     }

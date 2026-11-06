@@ -21,5 +21,6 @@ email-validator
 opencv-python
 scikit-learn
 pandas
+pypdf
 pytest
 psycopg2-binary

@@ -22,7 +22,7 @@ export class SugerenciasService {
     if (this.cargado()) return;
     try {
       const libros = await firstValueFrom(this.api.listarLibros());
-      const usuarios = this.auth.isAdmin()
+      const usuarios = this.auth.tienePermiso('gestion_usuarios')
         ? await firstValueFrom(this.api.listarUsuarios())
         : [];
       this.libros.set(libros);

@@ -17,8 +17,8 @@ from .conftest import crear_usuario, login
 
 
 def test_secreto_jwt_usa_el_valor_definido(monkeypatch):
-    monkeypatch.setenv("MM_JWT_SECRET", "clave-de-prueba")
-    assert _secreto_jwt() == "clave-de-prueba"
+    monkeypatch.setenv("MM_JWT_SECRET", "clave-de-prueba-suficientemente-larga-2026")
+    assert _secreto_jwt() == "clave-de-prueba-suficientemente-larga-2026"
 
 
 def test_secreto_jwt_obligatorio_en_produccion(monkeypatch):
@@ -28,11 +28,32 @@ def test_secreto_jwt_obligatorio_en_produccion(monkeypatch):
         _secreto_jwt()
 
 
-def test_secreto_jwt_local_no_usa_valor_de_produccion(monkeypatch):
+def test_secreto_jwt_local_sin_flag_falla(monkeypatch):
     monkeypatch.delenv("MM_JWT_SECRET", raising=False)
     monkeypatch.delenv("RENDER", raising=False)
+    monkeypatch.delenv("MM_JWT_PERMITIR_CLAVE_DESARROLLO", raising=False)
+    with pytest.raises(RuntimeError):
+        _secreto_jwt()
+
+
+def test_secreto_jwt_local_con_flag_explicito(monkeypatch):
+    monkeypatch.delenv("MM_JWT_SECRET", raising=False)
+    monkeypatch.delenv("RENDER", raising=False)
+    monkeypatch.setenv("MM_JWT_PERMITIR_CLAVE_DESARROLLO", "1")
     clave = _secreto_jwt()
     assert clave and "_no_usar_en_produccion" in clave
+
+
+def test_secreto_jwt_corto_es_rechazado(monkeypatch):
+    monkeypatch.setenv("MM_JWT_SECRET", "corto")
+    with pytest.raises(RuntimeError):
+        _secreto_jwt()
+
+
+def test_secreto_jwt_clave_de_desarrollo_es_rechazada(monkeypatch):
+    monkeypatch.setenv("MM_JWT_SECRET", "clave_desarrollo_no_usar_en_produccion")
+    with pytest.raises(RuntimeError):
+        _secreto_jwt()
 
 
 def test_verify_password_solo_acepta_bcrypt():

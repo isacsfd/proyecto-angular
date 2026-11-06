@@ -66,24 +66,51 @@ export class AuthService {
 
   logout(): void {
     this.demo.desactivar();
+    this.limpiarSesionLocal();
+    this.router.navigate(['/login']);
+  }
+
+  /** Elimina credenciales locales sin navegar (usado también por el interceptor). */
+  limpiarSesionLocal(): void {
     sessionStorage.removeItem('jwt_token');
     sessionStorage.removeItem('userData');
     sessionStorage.removeItem('sesionActiva');
     this.usuario.set(null);
-    this.router.navigate(['/login']);
   }
 
   getToken(): string | null {
     return sessionStorage.getItem('jwt_token');
   }
 
+  /** Comprueba la expiración del JWT solo para UX; el backend sigue siendo la autoridad. */
+  private tokenExpirado(token: string): boolean {
+    const partes = token.split('.');
+    if (partes.length !== 3) return false; // token opaco: lo valida el backend
+    try {
+      const base64 = partes[1].replace(/-/g, '+').replace(/_/g, '/');
+      const relleno = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+      const payload = JSON.parse(atob(relleno)) as { exp?: unknown };
+      return typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now();
+    } catch {
+      return false;
+    }
+  }
+
   isDemo(): boolean {
     return this.demo.activo();
   }
 
-  /** Autenticación REAL: exige un JWT válido. El modo demo NO cuenta como sesión real. */
+  /** Autenticación REAL: exige un JWT válido y no expirado. El modo demo NO cuenta. */
   isAuthenticated(): boolean {
-    return sessionStorage.getItem('sesionActiva') === 'true' && !!this.getToken();
+    const token = this.getToken();
+    if (sessionStorage.getItem('sesionActiva') !== 'true' || !token) {
+      return false;
+    }
+    if (this.tokenExpirado(token)) {
+      this.limpiarSesionLocal();
+      return false;
+    }
+    return true;
   }
 
   isAdmin(): boolean {

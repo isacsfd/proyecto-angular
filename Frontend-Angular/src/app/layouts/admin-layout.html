@@ -22,7 +22,7 @@
       <app-buscar-sugerencias
         [libros]="sugerencias.libros()"
         [usuarios]="sugerencias.usuarios()"
-        [mostrarUsuarios]="true"
+        [mostrarUsuarios]="puede('gestion_usuarios')"
         placeholder="Buscar libros o estudiantes..."
         (seleccion)="buscarGlobal($event)"
       ></app-buscar-sugerencias>

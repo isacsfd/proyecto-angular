@@ -11,4 +11,6 @@ export const environment = {
   production: true,
   // API principal (FastAPI desplegada). Ej: 'https://api-biblioteca-iub.onrender.com'
   apiUrl: 'https://biblioteca-iub-api.onrender.com',
+  // Vacío hasta disponer de una URL Express autorizada; conserva fallback a FastAPI.
+  expressApiUrl: '',
 };

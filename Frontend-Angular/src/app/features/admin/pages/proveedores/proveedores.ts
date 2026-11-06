@@ -2,11 +2,13 @@ import { firstValueFrom } from 'rxjs';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { DatatableDirective } from '../../../../shared/datatable/datatable.directive';
+
 import { ComprasService, Proveedor } from '../../../../core/services/compras.service';
 
 @Component({
   selector: 'app-admin-proveedores',
-  imports: [FormsModule],
+  imports: [FormsModule, DatatableDirective],
   templateUrl: './proveedores.html',
   styleUrl: './proveedores.css',
 })
@@ -36,7 +38,7 @@ export class AdminProveedores {
       this.proveedores.set(await firstValueFrom(this.api.listarProveedores()));
       this.avisar('');
     } catch {
-      this.avisar('No se pudieron cargar los proveedores. Verifique que el backend FastAPI esté activo.');
+      this.avisar('No se pudieron cargar los proveedores. Verifique que la API de compras esté activa.');
     } finally {
       this.cargando.set(false);
     }
@@ -89,8 +91,8 @@ export class AdminProveedores {
       this.editandoId = null;
       await this.cargar();
     } catch (e: unknown) {
-      const err = e as { error?: { error?: string } };
-      this.avisar(err?.error?.error || 'Error al guardar el proveedor.');
+      const err = e as { error?: { detail?: string; error?: string } };
+      this.avisar(err?.error?.detail || err?.error?.error || 'Error al guardar el proveedor.');
     }
   }
 

@@ -11,6 +11,7 @@ from services.user_service import get_user_by_dni
 from services.rate_limit import limitador_qr, clave_por_ip
 from models.models import LibraryAccess, UserTable
 from auth import verificar_token, requiere_modulo
+from services.rbac import sede_efectiva
 from typing import List
 from datetime import datetime
 
@@ -104,18 +105,19 @@ class AccessLogResponse(BaseModel):
 @access_router.get("/", response_model=List[AccessLogResponse])
 def get_all_library_access(
     db: Session = Depends(get_db),
-    _: dict = Depends(requiere_modulo("ingresos")),
+    token_data: dict = Depends(requiere_modulo("ingresos")),
     skip: int = 0,
     limit: int = 100,
 ):
     """
     Devuelve los registros de acceso ordenados del más reciente al más antiguo.
     Solo administradores y super administradores. El nombre se obtiene del JOIN
-    con la tabla de usuarios (nunca del caché de sesión).
+    con la tabla de usuarios (nunca del caché de sesión). Los roles que no son
+    super administrador solo ven los accesos de su propia sede.
     """
     limit = min(max(limit, 1), 500)  # acotar para evitar cargas excesivas
     try:
-        access_logs = (
+        query = (
             db.query(
                 LibraryAccess.id,
                 LibraryAccess.user_id,
@@ -126,7 +128,12 @@ def get_all_library_access(
                 LibraryAccess.created_at,
             )
             .join(UserTable, LibraryAccess.user_id == UserTable.id)
-            .order_by(LibraryAccess.created_at.desc())
+        )
+        sede = sede_efectiva(token_data)
+        if sede:
+            query = query.filter(UserTable.sede == sede)
+        access_logs = (
+            query.order_by(LibraryAccess.created_at.desc())
             .offset(skip)
             .limit(limit)
             .all()

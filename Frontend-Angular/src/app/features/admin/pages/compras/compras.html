@@ -32,7 +32,7 @@
 <div class="card border shadow-sm">
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-hover align-middle">
+      <table class="table table-hover align-middle" appDatatable [dtData]="compras()">
         <thead>
           <tr>
             <th>Factura</th><th>Proveedor</th><th>Fecha</th><th class="text-end">Total</th><th class="text-end">Acciones</th>
@@ -77,7 +77,12 @@
           <input class="form-control form-control-sm" type="number" min="0" placeholder="Precio unit." name="precio" [(ngModel)]="formDetalle.precio_unitario">
         </div>
         <div class="col-md-3">
-          <button type="button" class="btn btn-sm btn-iub text-white w-100" (click)="agregarDetalle()">Agregar detalle</button>
+          <button type="button" class="btn btn-sm btn-iub text-white w-100" (click)="agregarDetalle()">
+            {{ editandoDetalleId === null ? 'Agregar detalle' : 'Guardar cambios' }}
+          </button>
+          @if (editandoDetalleId !== null) {
+            <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-1" (click)="cancelarEdicionDetalle()">Cancelar</button>
+          }
         </div>
       </div>
       <div class="table-responsive">
@@ -91,10 +96,11 @@
                 <td>{{ d.id }}</td>
                 <td>{{ d.descripcion }}</td>
                 <td>{{ d.cantidad }}</td>
-                <td>{{ d.precio_unitario | number : '1.2-2' }}</td>
-                <td>{{ d.cantidad * d.precio_unitario | number : '1.2-2' }}</td>
-                <td class="text-end">
-                  <button type="button" class="btn btn-sm btn-outline-danger" (click)="eliminarDetalle(d)">Eliminar</button>
+                  <td>{{ d.precio_unitario | number : '1.2-2' }}</td>
+                  <td>{{ d.cantidad * d.precio_unitario | number : '1.2-2' }}</td>
+                  <td class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-primary me-1" (click)="editarDetalle(d)">Editar</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" (click)="eliminarDetalle(d)">Eliminar</button>
                 </td>
               </tr>
             } @empty {

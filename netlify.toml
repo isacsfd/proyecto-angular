@@ -1,0 +1,15 @@
+# Netlify — Biblioteca IUB (frontend Angular)
+# Compila el frontend monorepo (carpeta Frontend-Angular) en producción.
+[build]
+  base = "Frontend-Angular"
+  command = "npm ci && npm run build -- --configuration production"
+  publish = "dist/Frontend-Angular/browser"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA Angular: cualquier ruta recargada se sirve por index.html (sin 404).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

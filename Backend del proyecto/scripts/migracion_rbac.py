@@ -1,73 +1,112 @@
 """
-migracion_rbac.py — Migración del esquema a RBAC (12 tablas)
-=============================================================
-Aplica en la base de datos actual (MySQL) la estructura RBAC:
+migracion_rbac.py — Migración segura del esquema y la matriz RBAC
+=================================================================
+Modo por defecto: PREVISUALIZACIÓN (no escribe nada).
 
+Uso:
+  python scripts/migracion_rbac.py            # muestra el impacto sin aplicar
+  python scripts/migracion_rbac.py --aplicar  # aplica los cambios
+
+Qué hace al aplicar:
   - Crea las tablas `rol`, `modulos`, `modulos_X_rol` y `configuracion`.
-  - Renombra `usuarios` -> `usuario`.
-  - Reemplaza la columna ENUM `rol` por `usuario.rol_id` (FK -> rol.id),
-    preservando los roles existentes.
-  - Siembra la matriz de permisos por módulo.
-  - NO destruye datos: conserva usuarios, libros, préstamos, etc.
+  - Renombra `usuarios` -> `usuario` (solo MySQL y si aplica).
+  - Añade `usuario.rol_id` y migra la columna ENUM `rol` (solo MySQL).
+  - Sincroniza la matriz RBAC de forma autoritativa SOLO sobre roles
+    canónicos. Los roles personalizados y sus enlaces NO se eliminan; se
+    reportan para conciliación manual.
 
-Idempotente: puede ejecutarse varias veces.
-Uso:  python scripts/migracion_rbac.py
+Reversión:
+  - Restaurar la matriz anterior en `services/rbac.py` y volver a ejecutar
+    con `--aplicar`. La sincronización vuelve a otorgar/revocar únicamente
+    enlaces de roles canónicos.
+  - Los roles personalizados no se modifican, por lo que no requieren
+    restauración.
+  - Conservar un respaldo de la base antes de aplicar.
+
+Este script no se ejecuta automáticamente y no debe apuntarse a producción
+sin autorización explícita y respaldo previo.
 """
 
+import argparse
+import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from database import engine, Base, SessionLocal
 from models.models import Rol, Modulo, ModuloRol
 from database import Configuracion
-from services.rbac import sembrar_rbac
+from services.rbac import planificar_rbac, sembrar_rbac
+
+TABLAS_RBAC = ["rol", "modulos", "modulos_X_rol", "configuracion"]
 
 
-def _existe_tabla(conn, nombre):
-    fila = conn.execute(text(
-        "SELECT COUNT(*) FROM information_schema.tables "
-        "WHERE table_schema = DATABASE() AND table_name = :n"
-    ), {"n": nombre}).scalar()
-    return int(fila) > 0
+def _estado_esquema() -> dict:
+    """Inspección de solo lectura del esquema actual."""
+    insp = inspect(engine)
+    tablas = set(insp.get_table_names())
+    columnas_usuario = (
+        {c["name"] for c in insp.get_columns("usuario")} if "usuario" in tablas else set()
+    )
+    return {
+        "motor": engine.dialect.name,
+        "tablas": sorted(tablas),
+        "tablas_rbac_faltantes": [t for t in TABLAS_RBAC if t not in tablas],
+        "renombrar_usuarios": "usuarios" in tablas and "usuario" not in tablas,
+        "agregar_rol_id": "usuario" in tablas and "rol_id" not in columnas_usuario,
+        "migrar_columna_rol": "rol" in columnas_usuario,
+    }
 
 
-def _existe_columna(conn, tabla, columna):
-    fila = conn.execute(text(
-        "SELECT COUNT(*) FROM information_schema.columns "
-        "WHERE table_schema = DATABASE() AND table_name = :t AND column_name = :c"
-    ), {"t": tabla, "c": columna}).scalar()
-    return int(fila) > 0
+def _plan_rbac() -> dict:
+    """Plan RBAC (solo lectura). Requiere las tres tablas RBAC."""
+    db = SessionLocal()
+    try:
+        return planificar_rbac(db)
+    finally:
+        db.close()
 
 
-def main():
-    # 1) Crear las tablas nuevas (rol, modulos, modulos_X_rol, configuracion)
+def _aplicar_esquema(estado: dict) -> None:
+    """Crea tablas y migra columnas. Solo MySQL para los pasos ALTER/RENAME."""
+    pasos = estado["renombrar_usuarios"] or estado["agregar_rol_id"] or estado["migrar_columna_rol"]
+    if pasos and estado["motor"] != "mysql":
+        raise RuntimeError(
+            "El esquema requiere pasos específicos de MySQL (RENAME/ALTER) y el "
+            f"motor actual es '{estado['motor']}'. Ejecute la migración de esquema "
+            "con el procedimiento institucional correspondiente."
+        )
+
     Base.metadata.create_all(bind=engine, tables=[
         Rol.__table__, Modulo.__table__, ModuloRol.__table__, Configuracion.__table__,
     ])
-    print("Tablas RBAC creadas/verificadas.")
+
+    if not pasos:
+        return
 
     with engine.begin() as conn:
-        # 2) Renombrar usuarios -> usuario (si aplica)
-        if _existe_tabla(conn, "usuarios") and not _existe_tabla(conn, "usuario"):
-            conn.execute(text("RENAME TABLE `usuarios` TO `usuario`"))
-            print("Tabla `usuarios` renombrada a `usuario`.")
-        else:
-            print("Tabla `usuario` ya en su lugar (o no existía `usuarios`).")
+        existe = lambda n: conn.execute(text(
+            "SELECT COUNT(*) FROM information_schema.tables "
+            "WHERE table_schema = DATABASE() AND table_name = :n"
+        ), {"n": n}).scalar() > 0
+        columna = lambda t, c: conn.execute(text(
+            "SELECT COUNT(*) FROM information_schema.columns "
+            "WHERE table_schema = DATABASE() AND table_name = :t AND column_name = :c"
+        ), {"t": t, "c": c}).scalar() > 0
 
-        # 3) Añadir rol_id a `usuario` si no existe
-        if _existe_tabla(conn, "usuario") and not _existe_columna(conn, "usuario", "rol_id"):
+        if existe("usuarios") and not existe("usuario"):
+            conn.execute(text("RENAME TABLE `usuarios` TO `usuario`"))
+
+        if existe("usuario") and not columna("usuario", "rol_id"):
             conn.execute(text(
                 "ALTER TABLE `usuario` ADD COLUMN rol_id INT NULL, "
                 "ADD CONSTRAINT fk_usuario_rol FOREIGN KEY (rol_id) REFERENCES rol(id)"
             ))
-            print("Columna `rol_id` añadida a `usuario`.")
 
-        # 4) Poblar `rol` con los roles existentes y rellenar rol_id
-        if _existe_columna(conn, "usuario", "rol"):
+        if columna("usuario", "rol"):
             conn.execute(text(
                 "INSERT IGNORE INTO rol (nombre, descripcion) "
                 "SELECT DISTINCT rol, rol FROM `usuario` WHERE rol IS NOT NULL"
@@ -78,18 +117,62 @@ def main():
             ))
             conn.execute(text("ALTER TABLE `usuario` DROP COLUMN rol"))
             conn.execute(text("ALTER TABLE `usuario` MODIFY rol_id INT NOT NULL"))
-            print("Roles poblados, `rol_id` rellenado y columna ENUM `rol` eliminada.")
 
-    # 5) Sembrar la matriz de módulos por rol (idempotente)
-    db = SessionLocal()
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Migración RBAC con previsualización")
+    parser.add_argument(
+        "--aplicar",
+        action="store_true",
+        help="Aplica los cambios. Sin esta bandera solo se muestra el plan.",
+    )
+    args = parser.parse_args()
+
+    estado = _estado_esquema()
+    resultado = {
+        "modo": "aplicar" if args.aplicar else "previsualizacion",
+        "esquema": estado,
+    }
+
+    tablas_rbac_listas = not estado["tablas_rbac_faltantes"]
+    if tablas_rbac_listas:
+        resultado["rbac"] = _plan_rbac()
+    else:
+        resultado["rbac"] = {
+            "pendiente": "Faltan tablas RBAC; se crearán al aplicar.",
+            "roles_personalizados": [],
+        }
+
+    if not args.aplicar:
+        print(json.dumps(resultado, ensure_ascii=False, indent=2))
+        return 0
+
     try:
-        sembrar_rbac(db)
-        print("Matriz de módulos por rol sembrada.")
-    finally:
-        db.close()
+        _aplicar_esquema(estado)
+        db = SessionLocal()
+        try:
+            sembrar_rbac(db, aplicar=True)
+            resultado["validacion"] = planificar_rbac(db)
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
 
-    print("\nMigración RBAC completada. Ya puede iniciar el backend.")
+    pendientes = (
+        resultado["validacion"]["enlaces_agregar"]
+        or resultado["validacion"]["enlaces_quitar"]
+        or resultado["validacion"]["roles_faltantes"]
+        or resultado["validacion"]["modulos_faltantes"]
+    )
+    resultado["aplicado"] = True
+    resultado["validado"] = not pendientes
+    print(json.dumps(resultado, ensure_ascii=False, indent=2))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

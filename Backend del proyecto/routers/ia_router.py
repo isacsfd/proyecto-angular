@@ -18,7 +18,8 @@ from sqlalchemy.orm import Session
 
 from database import get_db, Libro
 from auth import verificar_token, requiere_modulo
-from services.ia import chatbot, predictivo
+from services.rbac import sede_efectiva
+from services.ia import chatbot, predictivo, asistente
 from services.ia.busqueda_semantica import buscar
 from services.ia.recomendador import recomendar
 from services.ia import llm_client
@@ -35,6 +36,7 @@ class ChatResponse(BaseModel):
     respuesta: str
     motor: str
     intencion: str
+    fuentes: Optional[List[str]] = None
 
 
 class LibroResultado(BaseModel):
@@ -72,19 +74,21 @@ def _a_resultado(libro, score: float) -> LibroResultado:
 
 
 # ─── Chat / asistente virtual ────────────────────────────────────────────
-@ia_router.post("/chat", response_model=ChatResponse, summary="IUBot: asistente virtual")
+@ia_router.post("/chat", response_model=ChatResponse, summary="Asistente Bibliotecario IUB (orquestador)")
 def chat(
     data: ChatRequest,
     db: Session = Depends(get_db),
     token_data: dict = Depends(verificar_token),
 ):
     """
-    Envía un mensaje al asistente virtual. Usa el contexto del catálogo y,
-    si el usuario está autenticado, sus préstamos activos. Devuelve la
-    respuesta y el motor usado (ollama o determinista).
+    Envía un mensaje al asistente bibliotecario integral (Fase IA 5.3):
+    INSTITUCIONAL (RAG e5+guard) / CATÁLOGO / DISPONIBILIDAD / RECOMENDACIONES /
+    PRÉSTAMOS propios / dispositivos. Usa token_data para identidad (user_id
+    revalidado en BD); no expone datos de terceros ni hace operaciones
+    administrativas. Contrato idéntico al anterior.
     """
     user_id = token_data.get("id")
-    return chatbot.responder(db, data.mensaje, user_id=user_id)
+    return asistente.atender(db, data.mensaje, user_id=user_id, canal="web")
 
 
 # ─── Búsqueda semántica ──────────────────────────────────────────────────
@@ -128,10 +132,13 @@ def recomendaciones(
 @ia_router.get("/dashboard", summary="Panel de insights predictivos (solo administradores)")
 def dashboard_ia(
     db: Session = Depends(get_db),
-    _: dict = Depends(requiere_modulo("dashboard")),
+    token_data: dict = Depends(requiere_modulo("dashboard")),
 ):
-    """Reportes inteligentes: tendencia, morosidad, demanda y disponibilidad."""
-    return predictivo.resumen(db)
+    """Reportes inteligentes: tendencia, morosidad, demanda y disponibilidad.
+
+    El super administrador ve todas las sedes; el resto solo la suya.
+    """
+    return predictivo.resumen(db, sede=sede_efectiva(token_data))
 
 
 # ─── Estado del motor de IA ──────────────────────────────────────────────

@@ -19,8 +19,9 @@ Reglas especiales:
 """
 
 import os
+import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Mapping, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
@@ -31,22 +32,82 @@ from models.models import UserTable, Rol, Modulo, ModuloRol
 
 # ─── Configuración ────────────────────────────────────────────────────────────
 # En producción (RENDER) MM_JWT_SECRET es OBLIGATORIA: nunca se usa un valor por
-# defecto. Para desarrollo local se usa una clave fija documentada, que en
-# ningún caso debe emplearse en producción.
-def _secreto_jwt() -> str:
-    clave = os.getenv("MM_JWT_SECRET")
+# defecto. En desarrollo local se exige MM_JWT_PERMITIR_CLAVE_DESARROLLO=1;
+# esa clave nunca debe emplearse en producción.
+_CLAVE_DESARROLLO = "clave_desarrollo_no_usar_en_produccion"
+_SECRETO_MIN_LEN = 32
+_TOKEN_MAX_LEN = 8192
+
+
+def _entorno(env: Optional[Mapping[str, str]] = None) -> Mapping[str, str]:
+    return os.environ if env is None else env
+
+
+def _es_produccion(env: Mapping[str, str]) -> bool:
+    return bool(env.get("RENDER")) or (
+        (env.get("MM_ENTORNO") or "").strip().lower() in {"produccion", "production"}
+    )
+
+
+def _secreto_jwt(env: Optional[Mapping[str, str]] = None) -> str:
+    """Obtiene y valida el secreto JWT. Sin valor por defecto inseguro."""
+    entorno = _entorno(env)
+    clave = (entorno.get("MM_JWT_SECRET") or "").strip()
     if clave:
+        if len(clave) < _SECRETO_MIN_LEN or len(set(clave)) < 8:
+            raise RuntimeError(
+                "MM_JWT_SECRET es demasiado debil: use al menos 32 caracteres "
+                "aleatorios y variados."
+            )
+        if clave == _CLAVE_DESARROLLO:
+            raise RuntimeError("MM_JWT_SECRET no puede ser la clave de desarrollo.")
         return clave
-    if os.getenv("RENDER"):
+
+    permitir_dev = (entorno.get("MM_JWT_PERMITIR_CLAVE_DESARROLLO") or "").strip() == "1"
+    if permitir_dev and not _es_produccion(entorno):
+        return _CLAVE_DESARROLLO
+    raise RuntimeError(
+        "MM_JWT_SECRET no esta definida. Configure un secreto aleatorio de al "
+        "menos 32 caracteres. Solo en desarrollo local puede usar "
+        "MM_JWT_PERMITIR_CLAVE_DESARROLLO=1."
+    )
+
+
+def _horas_token(env: Optional[Mapping[str, str]] = None) -> int:
+    valor = (_entorno(env).get("MM_TOKEN_HORAS") or "8").strip()
+    try:
+        horas = int(valor)
+    except ValueError:
+        raise RuntimeError("MM_TOKEN_HORAS debe ser un entero entre 1 y 24.")
+    if not 1 <= horas <= 24:
+        raise RuntimeError("MM_TOKEN_HORAS debe estar entre 1 y 24 horas.")
+    return horas
+
+
+def _revocar_antes(env: Optional[Mapping[str, str]] = None) -> Optional[int]:
+    """Timestamp de revocacion global de tokens (opcional)."""
+    valor = (_entorno(env).get("MM_JWT_REVOCAR_ANTES") or "").strip()
+    if not valor:
+        return None
+    try:
+        if valor.isdigit():
+            return int(valor)
+        fecha = datetime.fromisoformat(valor.replace("Z", "+00:00"))
+        if fecha.tzinfo is None:
+            fecha = fecha.replace(tzinfo=timezone.utc)
+        return int(fecha.timestamp())
+    except ValueError:
         raise RuntimeError(
-            "MM_JWT_SECRET no está definida en producción. Configúrela en "
-            "Render (Settings → Environment) con un valor aleatorio largo."
+            "MM_JWT_REVOCAR_ANTES debe ser una fecha ISO-8601 o un timestamp Unix."
         )
-    return "clave_desarrollo_no_usar_en_produccion"
+
 
 SECRET_KEY = _secreto_jwt()
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_HOURS = int(os.getenv("MM_TOKEN_HORAS", "8"))
+ACCESS_TOKEN_EXPIRE_HOURS = _horas_token()
+JWT_ISSUER = (os.getenv("MM_JWT_ISSUER") or "").strip() or None
+JWT_AUDIENCE = (os.getenv("MM_JWT_AUDIENCE") or "").strip() or None
+REVOCAR_ANTES = _revocar_antes()
 
 # Roles del sistema
 SUPER_ADMIN = "super_administrador"
@@ -59,70 +120,117 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 
 # ─── Crear token ──────────────────────────────────────────────────────────────
+def _error_401(detalle: str = "Token invalido o expirado. Inicie sesion nuevamente.") -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=detalle,
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
 def crear_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """
-    Crea un JWT firmado con los datos del usuario.
-    'data' debe incluir al menos: id, nombre, rol, identificacion.
-    """
+    """Crea un JWT firmado con claims de vigencia, identificador y sujeto."""
     payload = data.copy()
     ahora = datetime.now(timezone.utc)
     expiracion = ahora + (
         expires_delta if expires_delta else timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     )
-    payload.update({"exp": expiracion, "iat": ahora})
+    payload.update({
+        "exp": expiracion,
+        "iat": ahora,
+        "nbf": ahora,
+        "jti": uuid.uuid4().hex,
+    })
+    if payload.get("id") is not None:
+        payload["sub"] = str(payload["id"])
+    if JWT_ISSUER:
+        payload["iss"] = JWT_ISSUER
+    if JWT_AUDIENCE:
+        payload["aud"] = JWT_AUDIENCE
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
-# ─── Verificar token (identidad + rol ACTUAL desde BD) ───────────────────────
+def _decodificar_token(token: str) -> dict:
+    """Valida firma, algoritmo, vigencia y estructura de claims."""
+    if not token or len(token) > _TOKEN_MAX_LEN:
+        raise _error_401()
+    opciones = {
+        "verify_signature": True,
+        "verify_exp": True,
+        "verify_iat": True,
+        "verify_nbf": True,
+        "verify_aud": bool(JWT_AUDIENCE),
+        "verify_iss": bool(JWT_ISSUER),
+        "require_exp": True,
+        "require_iat": True,
+        "require_aud": bool(JWT_AUDIENCE),
+        "require_iss": bool(JWT_ISSUER),
+    }
+    kwargs = {}
+    if JWT_AUDIENCE:
+        kwargs["audience"] = JWT_AUDIENCE
+    if JWT_ISSUER:
+        kwargs["issuer"] = JWT_ISSUER
+    try:
+        payload = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM], options=opciones, **kwargs
+        )
+    except JWTError:
+        raise _error_401()
+
+    user_id = payload.get("id")
+    if isinstance(user_id, bool) or not isinstance(user_id, int) or user_id <= 0:
+        raise _error_401("Token invalido. Inicie sesion nuevamente.")
+    rol = payload.get("rol")
+    if not isinstance(rol, str) or not rol.strip():
+        raise _error_401("Token invalido. Inicie sesion nuevamente.")
+    sub = payload.get("sub")
+    if sub is not None and sub != str(user_id):
+        raise _error_401("Token invalido. Inicie sesion nuevamente.")
+    jti = payload.get("jti")
+    if jti is not None and not isinstance(jti, str):
+        raise _error_401("Token invalido. Inicie sesion nuevamente.")
+    try:
+        iat = int(payload["iat"])
+        exp = int(payload["exp"])
+    except (KeyError, TypeError, ValueError):
+        raise _error_401("Token invalido. Inicie sesion nuevamente.")
+
+    ahora = int(datetime.now(timezone.utc).timestamp())
+    if iat > ahora + 60 or exp <= iat:
+        raise _error_401("Token invalido. Inicie sesion nuevamente.")
+    if REVOCAR_ANTES is not None and iat < REVOCAR_ANTES:
+        raise _error_401("La sesion fue revocada. Inicie sesion nuevamente.")
+    return payload
+
+
 def verificar_token(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> dict:
-    """
-    Dependencia de FastAPI: valida el JWT, localiza al usuario en la BD y
-    devuelve sus datos con el rol ACTUAL (no el que viajaba en el token).
-    Lanza 401 si no hay token, es inválido/expirado o el usuario ya no existe.
+    """Valida el JWT y devuelve la identidad vigente leida de la base de datos.
+
+    El rol, el rol_id y la sede SIEMPRE se toman de la BD, nunca del token, de
+    modo que una degradacion o un traslado de sede surten efecto de inmediato.
     """
     if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No autenticado. Incluya un token en el header Authorization.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    token = credentials.credentials
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido o expirado. Inicie sesión nuevamente.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise _error_401("No autenticado. Incluya un token en el header Authorization.")
+    payload = _decodificar_token(credentials.credentials)
 
-    user_id = payload.get("id")
-    if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido. Inicie sesión nuevamente.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    user = db.query(UserTable).filter(UserTable.id == user_id).first()
+    user = db.query(UserTable).filter(UserTable.id == payload["id"]).first()
     if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuario no encontrado. Inicie sesión nuevamente.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise _error_401("Usuario no encontrado. Inicie sesion nuevamente.")
+    if not user.rol_id or not user.rol:
+        raise _error_401("Cuenta sin rol valido. Contacte al administrador.")
 
-    # Rol vigente tomado de la BD (revalidación), nunca del token.
-    payload["rol"] = user.rol  # nombre del rol (resuelto por rol_id -> rol.nombre)
+    payload["rol"] = user.rol
     payload["rol_id"] = user.rol_id
     payload["id"] = user.id
+    payload["sub"] = str(user.id)
+    payload["sede"] = user.sede
     return payload
 
 
-# ─── Helpers de privilegios ───────────────────────────────────────────────────
 def es_admin(token_data: dict) -> bool:
     """¿Puede realizar operaciones administrativas? (super o administrador)"""
     return token_data.get("rol") in ROLES_ADMIN

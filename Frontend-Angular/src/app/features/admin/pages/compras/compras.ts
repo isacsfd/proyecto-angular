@@ -3,11 +3,13 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
+import { DatatableDirective } from '../../../../shared/datatable/datatable.directive';
+
 import { ComprasService, Compra, DetalleCompra, Proveedor } from '../../../../core/services/compras.service';
 
 @Component({
   selector: 'app-admin-compras',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DatatableDirective],
   templateUrl: './compras.html',
   styleUrl: './compras.css',
 })
@@ -24,6 +26,7 @@ export class AdminCompras {
 
   formCompra = { proveedor_id: 0, numero_factura: '', fecha: '', total: 0 };
   formDetalle = { descripcion: '', cantidad: 1, precio_unitario: 0 };
+  editandoDetalleId: number | null = null;
 
   constructor() {
     void this.cargar();
@@ -49,7 +52,7 @@ export class AdminCompras {
       this.proveedores.set(proveedores);
       this.avisar('');
     } catch {
-      this.avisar('No se pudieron cargar las compras. Verifique que el backend FastAPI esté activo.');
+      this.avisar('No se pudieron cargar las compras. Verifique que la API de compras esté activa.');
     } finally {
       this.cargando.set(false);
     }
@@ -58,6 +61,7 @@ export class AdminCompras {
   async seleccionar(c: Compra): Promise<void> {
     this.seleccionada.set(c);
     this.formDetalle = { descripcion: '', cantidad: 1, precio_unitario: 0 };
+    this.editandoDetalleId = null;
     await this.cargarDetalles(c.id);
   }
 
@@ -73,6 +77,20 @@ export class AdminCompras {
 
   nuevo(): void {
     this.formCompra = { proveedor_id: 0, numero_factura: '', fecha: '', total: 0 };
+  }
+
+  editarDetalle(detalle: DetalleCompra): void {
+    this.editandoDetalleId = detalle.id;
+    this.formDetalle = {
+      descripcion: detalle.descripcion,
+      cantidad: detalle.cantidad,
+      precio_unitario: detalle.precio_unitario,
+    };
+  }
+
+  cancelarEdicionDetalle(): void {
+    this.editandoDetalleId = null;
+    this.formDetalle = { descripcion: '', cantidad: 1, precio_unitario: 0 };
   }
 
   async crear(): Promise<void> {
@@ -94,8 +112,8 @@ export class AdminCompras {
       await this.cargar();
       await this.seleccionar(creada);
     } catch (e: unknown) {
-      const err = e as { error?: { error?: string } };
-      this.avisar(err?.error?.error || 'Error al crear la compra.');
+      const err = e as { error?: { detail?: string; error?: string } };
+      this.avisar(err?.error?.detail || err?.error?.error || 'Error al crear la compra.');
     }
   }
 
@@ -107,18 +125,24 @@ export class AdminCompras {
       return;
     }
     try {
-      await firstValueFrom(
-        this.api.crearDetalle(c.id, {
-          descripcion: this.formDetalle.descripcion.trim(),
-          cantidad: Number(this.formDetalle.cantidad),
-          precio_unitario: Number(this.formDetalle.precio_unitario),
-        }),
-      );
+      const datos = {
+        descripcion: this.formDetalle.descripcion.trim(),
+        cantidad: Number(this.formDetalle.cantidad),
+        precio_unitario: Number(this.formDetalle.precio_unitario),
+      };
+      if (this.editandoDetalleId === null) {
+        await firstValueFrom(this.api.crearDetalle(c.id, datos));
+        this.avisar('Detalle agregado.', 'success');
+      } else {
+        await firstValueFrom(this.api.actualizarDetalle(this.editandoDetalleId, datos));
+        this.avisar('Detalle actualizado.', 'success');
+      }
+      this.cancelarEdicionDetalle();
       await this.recalcularTotal(c.id);
       await this.cargarDetalles(c.id);
     } catch (e: unknown) {
-      const err = e as { error?: { error?: string } };
-      this.avisar(err?.error?.error || 'Error al agregar el detalle.');
+      const err = e as { error?: { detail?: string; error?: string } };
+      this.avisar(err?.error?.detail || err?.error?.error || 'Error al guardar el detalle.');
     }
   }
 

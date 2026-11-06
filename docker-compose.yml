@@ -1,0 +1,67 @@
+name: biblioteca-iub
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${MM_MYSQL_DATABASE:-biblioteca_iub_compras}
+      MYSQL_USER: ${MM_MYSQL_USER:-iub}
+      MYSQL_PASSWORD: ${MM_MYSQL_PASSWORD:-iubpass}
+    ports:
+      # 3307 en el host para no chocar con un MySQL/XAMPP local en 3306.
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: "./Backend del proyecto"
+    restart: unless-stopped
+    environment:
+      # Base principal (PostgreSQL/Neon). OBLIGATORIA: se define en .env.
+      MM_DATABASE_URL: ${MM_DATABASE_URL:?Define MM_DATABASE_URL en el archivo .env}
+      # Secreto JWT (obligatorio; sin valor por defecto inseguro).
+      MM_JWT_SECRET: ${MM_JWT_SECRET:?Define MM_JWT_SECRET en el archivo .env}
+      MM_TOKEN_HORAS: ${MM_TOKEN_HORAS:-8}
+      MM_JWT_ISSUER: ${MM_JWT_ISSUER:-}
+      MM_JWT_AUDIENCE: ${MM_JWT_AUDIENCE:-}
+      MM_JWT_REVOCAR_ANTES: ${MM_JWT_REVOCAR_ANTES:-}
+      MM_CORS_ORIGINS: ${MM_CORS_ORIGINS:-http://localhost:4200,http://localhost:8080}
+      # Módulo Proveedores/Compras/Detalles (MySQL del contenedor).
+      MM_MYSQL_HOST: mysql
+      MM_MYSQL_PORT: "3306"
+      MM_MYSQL_USER: ${MM_MYSQL_USER:-iub}
+      MM_MYSQL_PASSWORD: ${MM_MYSQL_PASSWORD:-iubpass}
+      MM_MYSQL_DATABASE: ${MM_MYSQL_DATABASE:-biblioteca_iub_compras}
+      # Manuales institucionales para el chatbot (montados de solo lectura).
+      MM_MANUALES_DIR: /docs
+    volumes:
+      - ./docs:/docs:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: "./Frontend-Angular"
+      args:
+        # URL de la API que se incrusta en el build de Angular.
+        API_URL: ${API_URL:-http://localhost:8000}
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

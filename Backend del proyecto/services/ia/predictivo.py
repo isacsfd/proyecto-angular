@@ -19,7 +19,7 @@ from datetime import datetime
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from sqlalchemy import func, cast, String
+from sqlalchemy import cast, String
 from sqlalchemy.orm import Session
 
 from database import Libro, Prestamos, Dispositivo, PrestamoDispositivo
@@ -43,10 +43,15 @@ def _etiqueta_mes(fecha: datetime) -> str:
     return fecha.strftime("%Y-%m")
 
 
-def tendencia_prestamos(db: Session) -> dict:
-    """Préstamos por mes + proyección del próximo mes."""
+def tendencia_prestamos(db: Session, sede: str | None = None) -> dict:
+    """Préstamos por mes + proyección del próximo mes (opcionalmente por sede)."""
     conteo: Counter = Counter()
-    for p in db.query(Prestamos.created_at).all():
+    query = db.query(Prestamos.created_at)
+    if sede:
+        query = query.join(UserTable, Prestamos.user_id == UserTable.id).filter(
+            UserTable.sede == sede
+        )
+    for p in query.all():
         fecha = _parsear_fecha(p[0])
         if fecha:
             conteo[_etiqueta_mes(fecha)] += 1
@@ -75,10 +80,15 @@ def tendencia_prestamos(db: Session) -> dict:
     }
 
 
-def libros_top(db: Session, top: int = 5) -> list[dict]:
+def libros_top(db: Session, top: int = 5, sede: str | None = None) -> list[dict]:
     """Libros más prestados con su disponibilidad actual (consulta en lote)."""
     conteo: Counter = Counter()
-    for p in db.query(Prestamos.book_id).all():
+    query = db.query(Prestamos.book_id)
+    if sede:
+        query = query.join(UserTable, Prestamos.user_id == UserTable.id).filter(
+            UserTable.sede == sede
+        )
+    for p in query.all():
         if p[0] is not None:
             conteo[p[0]] += 1
 
@@ -107,9 +117,12 @@ def libros_top(db: Session, top: int = 5) -> list[dict]:
     return resultados
 
 
-def disponibilidad_critica(db: Session, top: int = 5) -> list[dict]:
+def disponibilidad_critica(db: Session, top: int = 5, sede: str | None = None) -> list[dict]:
     """Libros con 0 o 1 ejemplares (riesgo de agotarse)."""
-    criticos = db.query(Libro).filter(Libro.Ejemplar <= 1).order_by(Libro.Ejemplar.asc(), Libro.ID.desc()).all()
+    query = db.query(Libro).filter(Libro.Ejemplar <= 1)
+    if sede:
+        query = query.filter(Libro.sede == sede)
+    criticos = query.order_by(Libro.Ejemplar.asc(), Libro.ID.desc()).all()
     return [
         {
             "id": l.ID,
@@ -122,36 +135,42 @@ def disponibilidad_critica(db: Session, top: int = 5) -> list[dict]:
     ]
 
 
-def demanda_dispositivos(db: Session) -> dict:
+def demanda_dispositivos(db: Session, sede: str | None = None) -> dict:
     """Uso de dispositivos por tipo/sede y estado del inventario."""
+    query = db.query(Dispositivo)
+    if sede:
+        query = query.filter(Dispositivo.sede == sede)
+    dispositivos = query.all()
+    por_id = {d.id: d for d in dispositivos}
+
     conteo_sede: Counter = Counter()
     conteo_tipo: Counter = Counter()
     for p in db.query(PrestamoDispositivo.dispositivo_id).all():
-        d = db.query(Dispositivo).filter(Dispositivo.id == p[0]).first()
+        d = por_id.get(p[0])
         if d:
             conteo_sede[d.sede] += 1
             conteo_tipo[d.tipo] += 1
 
-    total = db.query(Dispositivo).count()
-    filas = (
-        db.query(Dispositivo.estado, func.count(Dispositivo.id))
-        .group_by(Dispositivo.estado)
-        .all()
-    )
-    por_estado = {estado: int(conteo) for estado, conteo in filas}
+    total = len(dispositivos)
+    por_estado = Counter(d.estado for d in dispositivos)
 
     return {
         "total_dispositivos": total,
         "por_sede": dict(conteo_sede.most_common()),
         "por_tipo": dict(conteo_tipo.most_common()),
-        "por_estado": por_estado,
+        "por_estado": dict(por_estado),
     }
 
 
-def morosidad(db: Session, top: int = 10) -> dict:
+def morosidad(db: Session, top: int = 10, sede: str | None = None) -> dict:
     """Préstamos vencidos (activos y con fecha de entrega pasada). Carga en lote."""
     hoy = datetime.now()
-    activos = db.query(Prestamos).filter(Prestamos.state == "Activo").all()
+    query = db.query(Prestamos).filter(Prestamos.state == "Activo")
+    if sede:
+        query = query.join(UserTable, Prestamos.user_id == UserTable.id).filter(
+            UserTable.sede == sede
+        )
+    activos = query.all()
 
     vencidos = []
     for p in activos:
@@ -174,7 +193,6 @@ def morosidad(db: Session, top: int = 10) -> dict:
         {
             "id": p.id,
             "usuario": users[p.user_id].nombre if p.user_id in users else "N/A",
-            "identificacion": users[p.user_id].identificacion if p.user_id in users else "N/A",
             "libro": libros[p.book_id].Titulo if p.book_id in libros else "N/A",
             "fecha_entrega": p.delivery_date,
             "dias_vencido": dias,
@@ -184,9 +202,14 @@ def morosidad(db: Session, top: int = 10) -> dict:
     return {"total": len(vencidos), "lista": lista}
 
 
-def pendientes_aprobacion(db: Session) -> list[dict]:
+def pendientes_aprobacion(db: Session, sede: str | None = None) -> list[dict]:
     """Préstamos en estado 'No Aprobado' esperando revisión. Carga en lote."""
-    pendientes = db.query(Prestamos).filter(Prestamos.prestamo_state == "No Aprobado").all()
+    query = db.query(Prestamos).filter(Prestamos.prestamo_state == "No Aprobado")
+    if sede:
+        query = query.join(UserTable, Prestamos.user_id == UserTable.id).filter(
+            UserTable.sede == sede
+        )
+    pendientes = query.all()
     if not pendientes:
         return []
 
@@ -209,13 +232,13 @@ def pendientes_aprobacion(db: Session) -> list[dict]:
     ]
 
 
-def resumen(db: Session) -> dict:
+def resumen(db: Session, sede: str | None = None) -> dict:
     """Ensambla todos los insights en un solo panel para el dashboard."""
     return {
-        "tendencia": tendencia_prestamos(db),
-        "libros_top": libros_top(db),
-        "disponibilidad_critica": disponibilidad_critica(db),
-        "demanda_dispositivos": demanda_dispositivos(db),
-        "morosidad": morosidad(db),
-        "pendientes_aprobacion": pendientes_aprobacion(db),
+        "tendencia": tendencia_prestamos(db, sede=sede),
+        "libros_top": libros_top(db, sede=sede),
+        "disponibilidad_critica": disponibilidad_critica(db, sede=sede),
+        "demanda_dispositivos": demanda_dispositivos(db, sede=sede),
+        "morosidad": morosidad(db, sede=sede),
+        "pendientes_aprobacion": pendientes_aprobacion(db, sede=sede),
     }

@@ -62,6 +62,12 @@ ENGINE_OPTIONS = {
     "max_overflow": int(os.getenv("MM_POOL_MAX_OVERFLOW", "5")),
     "pool_timeout": int(os.getenv("MM_POOL_TIMEOUT", "30")),
 }
+# Tiempo máximo para abrir una conexión TCP/TLS con PostgreSQL. Evita que un
+# health check o una petición queden colgados si Neon no responde.
+if SQLALCHEMY_DATABASE_URL.startswith("postgresql"):
+    ENGINE_OPTIONS["connect_args"] = {
+        "connect_timeout": int(os.getenv("MM_DB_CONNECT_TIMEOUT", "5"))
+    }
 engine = create_engine(SQLALCHEMY_DATABASE_URL, **ENGINE_OPTIONS)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

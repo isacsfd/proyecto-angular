@@ -11,8 +11,12 @@ import tempfile
 
 _TMP = tempfile.mkdtemp(prefix="iub_tests_")
 os.environ["MM_DATABASE_URL"] = "sqlite:///" + os.path.join(_TMP, "test.db")
-os.environ["MM_JWT_SECRET"] = "clave-de-prueba-iub"
+os.environ["MM_JWT_SECRET"] = "clave-de-prueba-iub-suficientemente-larga-2026"
 os.environ["MM_CORS_ORIGINS"] = "http://localhost:4200"
+# Directorio de manuales vacío para pruebas (no cargar PDFs reales).
+_MANUALES = os.path.join(_TMP, "manuales")
+os.makedirs(_MANUALES, exist_ok=True)
+os.environ["MM_MANUALES_DIR"] = _MANUALES
 
 # Raíz del backend
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -31,50 +35,9 @@ from services.rate_limit import limitador_qr  # noqa: E402
 
 TABLAS = [ModuloRol, PrestamoDispositivo, Prestamos, LibraryAccess, Dispositivo, Libro, UserTable, Modulo, Rol, Configuracion]
 
-ROLES = ["super_administrador", "Administrador", "Funcionario", "Docente", "Estudiante"]
-
-MODULOS = [
-    "login", "inicio", "catalogo", "mis_prestamos", "dispositivos", "chatbot",
-    "dashboard", "gestion_usuarios", "gestion_libros", "gestion_dispositivos",
-    "gestion_prestamos", "estadisticas", "ingresos",
-]
-
-# Matriz de permisos (rol -> módulos). El super y el admin acceden a todo.
-MATRIZ = {
-    "super_administrador": MODULOS,
-    "Administrador": MODULOS,
-    "Funcionario": MODULOS,
-    "Docente": ["login", "inicio", "catalogo", "mis_prestamos", "dispositivos", "chatbot"],
-    "Estudiante": ["login", "inicio", "catalogo", "mis_prestamos", "dispositivos", "chatbot"],
-}
-
-
-def _sembrar_rbac(db):
-    """Crea roles, módulos y la matriz modulos_X_rol (idempotente)."""
-    roles = {}
-    for nombre in ROLES:
-        r = db.query(Rol).filter(Rol.nombre == nombre).first()
-        if not r:
-            r = Rol(nombre=nombre, descripcion=nombre)
-            db.add(r)
-            db.flush()
-        roles[nombre] = r.id
-    mods = {}
-    for nombre in MODULOS:
-        m = db.query(Modulo).filter(Modulo.nombre == nombre).first()
-        if not m:
-            m = Modulo(nombre=nombre, ruta="/" + nombre, descripcion=nombre, orden=0)
-            db.add(m)
-            db.flush()
-        mods[nombre] = m.id
-    for rol_nombre, lista in MATRIZ.items():
-        for mod_nombre in lista:
-            existe = db.query(ModuloRol).filter(
-                ModuloRol.rol_id == roles[rol_nombre], ModuloRol.modulo_id == mods[mod_nombre]
-            ).first()
-            if not existe:
-                db.add(ModuloRol(rol_id=roles[rol_nombre], modulo_id=mods[mod_nombre]))
-    db.commit()
+# La matriz RBAC se importa de la fuente única para que las pruebas no queden
+# desincronizadas cuando cambien los permisos.
+from services.rbac import ROLES, MODULOS, MATRIZ, sembrar_rbac as _sembrar_rbac  # noqa: E402
 
 
 def _rol_id(db, rol):

@@ -1,10 +1,10 @@
-# render.yaml — Blueprint de despliegue (Render)
+﻿# render.yaml ÔÇö Blueprint de despliegue (Render)
 # ================================================
 # Define el servicio web de FastAPI (Biblioteca IUB) conectado al repositorio.
 # NO contiene secretos: las variables marcadas con `sync: false` se introducen
 # en el panel de Render (Environment) al crear el servicio desde el Blueprint.
 #
-# Uso: en Render → New → Blueprint → selecciona este repositorio.
+# Uso: en Render ÔåÆ New ÔåÆ Blueprint ÔåÆ selecciona este repositorio.
 # Health check: GET /  (definido abajo).
 
 services:
@@ -18,22 +18,22 @@ services:
     healthCheckPath: /
     autoDeploy: true
     envVars:
-      # Versión de Python (psycopg2-binary con wheels disponibles).
+      # Versi├│n de Python (psycopg2-binary con wheels disponibles).
       - key: PYTHON_VERSION
         value: "3.11.9"
-      # Conexión PostgreSQL de Neon (se introduce en el panel; no en el repo).
+      # Conexi├│n PostgreSQL de Neon (se introduce en el panel; no en el repo).
       - key: MM_DATABASE_URL
         sync: false
-      # Secreto JWT de producción (Render lo genera aleatoriamente).
+      # Secreto JWT de producci├│n (Render lo genera aleatoriamente).
       - key: MM_JWT_SECRET
         generateValue: true
       # Origen(es) del frontend para CORS (se define cuando el frontend se despliegue).
       - key: MM_CORS_ORIGINS
         sync: false
-      # Duración del token (horas).
+      # Duraci├│n del token (horas).
       - key: MM_TOKEN_HORAS
         value: "8"
-      # Conexión MySQL de XAMPP para Proveedores/Compras/Detalles (FastAPI).
+      # Conexi├│n MySQL de XAMPP para Proveedores/Compras/Detalles (FastAPI).
       - key: MM_MYSQL_HOST
         sync: false
       - key: MM_MYSQL_PORT
@@ -44,3 +44,46 @@ services:
         sync: false
       - key: MM_MYSQL_DATABASE
         sync: false
+
+  # ───────── SERVICIO NUEVO: API Express (proveedores/compras/detalles) ─────────
+  - type: web
+    name: biblioteca-iub-express        # no modifica el FastAPI existente
+    runtime: node
+    plan: free
+    rootDir: express-api
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: EXPRESS_PORT
+        value: "4000"
+      - key: EXPRESS_HOST
+        value: "0.0.0.0"
+      - key: MM_JWT_SECRET            # el mismo secreto de FastAPI
+        sync: false
+      - key: MM_JWT_AUDIENCE
+        sync: false
+      - key: FASTAPI_INTROSPECTION_URL
+        value: https://biblioteca-iub-api.onrender.com/api/auth/introspect
+      - key: FASTAPI_INTROSPECTION_TIMEOUT_MS
+        value: "2500"
+      - key: MM_MYSQL_HOST            # MySQL de compras (REQUIERE autorización para nube)
+        sync: false
+      - key: MM_MYSQL_PORT
+        value: "3306"
+      - key: MM_MYSQL_USER
+        sync: false
+      - key: MM_MYSQL_PASSWORD
+        sync: false
+      - key: MM_MYSQL_DATABASE
+        value: biblioteca_iub_compras
+      - key: EXPRESS_CORS_ORIGINS     # origen del frontend desplegado
+        sync: false
+      - key: EXPRESS_RATE_LIMIT_MAX
+        value: "120"
+      - key: EXPRESS_RATE_LIMIT_WINDOW_MS
+        value: "60000"
+
+# El servicio FastAPI existente en Render se mantiene tal cual (sin modificarlo).

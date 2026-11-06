@@ -12,6 +12,7 @@ import { DemoService } from '../services/demo.service';
 import { environment } from '../../../environments/environment';
 
 const URL_FASTAPI = `${environment.apiUrl}/usuarios/`;
+const URL_EXPRESS = `${environment.expressApiUrl}/api/proveedores`;
 // API secundaria genÃ©rica (cualquier origen distinto de FastAPI) para verificar
 // que sus 401 no cierran la sesiÃ³n global.
 const URL_SECUNDARIA = 'http://localhost:3002/api/proveedores';
@@ -94,5 +95,61 @@ describe('jwtInterceptor', () => {
     expect(status).toBe(500);
     expect(sessionStorage.getItem('sesionActiva')).toBe('true');
     expect(nav).not.toHaveBeenCalled();
+  });
+
+  it('envía el token solo a la API principal', () => {
+    setup();
+    sesionReal();
+    const http = TestBed.inject(HttpClient);
+    const ctrl = TestBed.inject(HttpTestingController);
+    http.get(URL_FASTAPI).subscribe();
+    const req = ctrl.expectOne(URL_FASTAPI);
+    expect(req.request.headers.get('Authorization')).toBe('Bearer token-de-prueba');
+    req.flush([]);
+  });
+
+  it('envía el token a la API Express configurada', () => {
+    setup();
+    sesionReal();
+    const http = TestBed.inject(HttpClient);
+    const ctrl = TestBed.inject(HttpTestingController);
+    http.get(URL_EXPRESS).subscribe();
+    const req = ctrl.expectOne(URL_EXPRESS);
+    expect(req.request.headers.get('Authorization')).toBe('Bearer token-de-prueba');
+    req.flush([]);
+  });
+
+  it('no envía el token a dominios externos', () => {
+    setup();
+    sesionReal();
+    const http = TestBed.inject(HttpClient);
+    const ctrl = TestBed.inject(HttpTestingController);
+    http.get(URL_SECUNDARIA).subscribe();
+    const req = ctrl.expectOne(URL_SECUNDARIA);
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    req.flush([]);
+  });
+
+  it('no envía el token a rutas relativas de otro origen', () => {
+    setup();
+    sesionReal();
+    const http = TestBed.inject(HttpClient);
+    const ctrl = TestBed.inject(HttpTestingController);
+    http.get('/api/proveedores').subscribe();
+    const req = ctrl.expectOne('/api/proveedores');
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    req.flush([]);
+  });
+
+  it('no adjunta un token viejo al login', () => {
+    setup();
+    sesionReal();
+    const http = TestBed.inject(HttpClient);
+    const ctrl = TestBed.inject(HttpTestingController);
+    const url = `${environment.apiUrl}/login`;
+    http.post(url, {}).subscribe();
+    const req = ctrl.expectOne(url);
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    req.flush({});
   });
 });

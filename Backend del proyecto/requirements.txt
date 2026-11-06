@@ -39,3 +39,5 @@ scikit-learn
 pandas
 pytest
 psycopg2-binary
+pypdf
+python-telegram-bot==21.11.1
