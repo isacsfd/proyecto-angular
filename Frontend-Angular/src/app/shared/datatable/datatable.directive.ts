@@ -12,6 +12,27 @@ import {
 declare const $: any;
 
 /**
+ * ¿El DOM de la tabla es compatible con la autodetección de DataTables?
+ * DataTables toma las columnas del primer <thead> y luego espera que TODAS
+ * las filas del <tbody> tengan ese mismo número de celdas. Las filas de
+ * estado vacío con <td colspan="N"> rompen ese contrato y provocan el error
+ * "Requested unknown parameter 'N' ...".
+ * Regla: compatible solo si hay al menos una fila y todas comparten el
+ * número de columnas del encabezado.
+ */
+export function tablaCompatibleConDatatables(tabla: HTMLTableElement | null): boolean {
+  if (!tabla || !tabla.tHead || !tabla.tBodies.length) return false;
+  const columnas = tabla.tHead.rows[0]?.cells.length ?? 0;
+  if (columnas === 0) return false;
+  const filas = tabla.tBodies[0].rows;
+  if (filas.length === 0) return false;
+  for (let i = 0; i < filas.length; i++) {
+    if (filas[i].cells.length !== columnas) return false;
+  }
+  return true;
+}
+
+/**
  * DatatableDirective — Convierte una <table> ya renderizada por Angular en una
  * DataTable (DataTables.js + Bootstrap 5). La fila se mantiene como la escribe
  * Angular (@for); DataTables aporta ordenamiento, paginación e info en español.
@@ -122,6 +143,13 @@ export class DatatableDirective implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private init(): void {
+    // Estado vacío con fila colspan: no inicializar DataTables (se queda la
+    // tabla plana de Angular con su mensaje). Al llegar datos (cambio de
+    // dtData), programarReinicio vuelve a intentar la inicialización.
+    if (!tablaCompatibleConDatatables(this.el)) {
+      this.liberar();
+      return;
+    }
     if (this.dt) return;
     try {
       this.dt = $(this.el).DataTable({

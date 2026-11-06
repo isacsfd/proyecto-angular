@@ -23,7 +23,9 @@ function listaCsv(nombre, valorPorDefecto) {
 }
 
 const config = {
-  port: entero('EXPRESS_PORT', 4000),
+  // En Render el web service expone el puerto asignado en la variable PORT:
+  // tiene prioridad. Localmente se usa EXPRESS_PORT y, si faltan ambas, 4000.
+  port: entero('PORT', entero('EXPRESS_PORT', 4000)),
   jwtSecret: process.env.MM_JWT_SECRET || '',
   jwtIssuer: process.env.MM_JWT_ISSUER || '',
   jwtAudience: process.env.MM_JWT_AUDIENCE || '',

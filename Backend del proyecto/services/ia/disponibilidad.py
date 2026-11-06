@@ -108,20 +108,11 @@ def determinar_modo(db, titulo: str) -> dict:
 
     objetivo_tok = _tokens(objetivo)
 
-    # H-4: por autor (nombres de autores, con masa de tokens)
+    # H-4: por autor (simplificación razonable): autor cuyo texto contiene al
+    # menos 1 token (>= 4) del pedido y NO posee ningún token del Título
+    # distinto (evita mezclas).
     por_autor = []
     if objetivo_tok:
-        por_autor = [
-            l for l in libros
-            if any("; " not in str(l.Autor or "")) and
-            len(objetivo_tok & {_w for _w in _tokens(str(l.Autor or '')) if len(_w) >= 4}) >= 1 and
-            objetivo_tok.issubset(
-                {_w for _w in _tokens(str(l.Autor or '')) if len(_w) >= 3}.union(
-                    {w for tl in _tokens(str(l.Titulo or '')) if False})
-            )
-        ]
-        # Simplificación razonable: autor cuyo texto contiene al menos 1 token (>= 4)
-        # del pedido y NO posee ningún token del Título distinto (evita mezclas).
         por_autor = [
             l for l in libros
             if objetivo_tok.intersection({_w for _w in _tokens(str(l.Autor or '')) if len(_w) >= 4})

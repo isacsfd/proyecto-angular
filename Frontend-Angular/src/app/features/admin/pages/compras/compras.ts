@@ -1,5 +1,5 @@
 import { firstValueFrom } from 'rxjs';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -20,9 +20,14 @@ export class AdminCompras {
   proveedores = signal<Proveedor[]>([]);
   detalles = signal<DetalleCompra[]>([]);
   seleccionada = signal<Compra | null>(null);
-  cargando = signal(false);
+  cargandoCompras = signal(false);
+  cargandoProveedores = signal(false);
+  /** Estado agregado para el botón (compatibilidad con la plantilla). */
+  cargando = computed(() => this.cargandoCompras() || this.cargandoProveedores());
   mensaje = signal('');
   tipoMensaje = signal<'danger' | 'success' | ''>('');
+  mensajeProveedores = signal('');
+  tipoProveedores = signal<'danger' | 'success' | ''>('');
 
   formCompra = { proveedor_id: 0, numero_factura: '', fecha: '', total: 0 };
   formDetalle = { descripcion: '', cantidad: 1, precio_unitario: 0 };
@@ -37,24 +42,47 @@ export class AdminCompras {
     this.tipoMensaje.set(tipo);
   }
 
+  private avisarProveedores(texto: string, tipo: 'danger' | 'success' | '' = 'danger'): void {
+    this.mensajeProveedores.set(texto);
+    this.tipoProveedores.set(tipo);
+  }
+
+  private _detalleError(e: unknown, textoFijo: string): string {
+    const err = e as { error?: { detail?: string; error?: string } };
+    return err?.error?.detail || err?.error?.error || textoFijo;
+  }
+
   totalDetalles(detalles: DetalleCompra[]): number {
     return detalles.reduce((suma, d) => suma + d.cantidad * d.precio_unitario, 0);
   }
 
-  async cargar(): Promise<void> {
-    this.cargando.set(true);
+  /** Cargas independientes: una falla no bloquea la otra. */
+  cargar(): void {
+    void this.cargarCompras();
+    void this.cargarProveedores();
+  }
+
+  async cargarCompras(): Promise<void> {
+    this.cargandoCompras.set(true);
     try {
-      const [compras, proveedores] = await Promise.all([
-        firstValueFrom(this.api.listarCompras()),
-        firstValueFrom(this.api.listarProveedores()),
-      ]);
-      this.compras.set(compras);
-      this.proveedores.set(proveedores);
+      this.compras.set(await firstValueFrom(this.api.listarCompras()));
       this.avisar('');
-    } catch {
-      this.avisar('No se pudieron cargar las compras. Verifique que la API de compras esté activa.');
+    } catch (e: unknown) {
+      this.avisar(this._detalleError(e, 'No se pudieron cargar las compras. Verifique que la API de compras esté activa.'));
     } finally {
-      this.cargando.set(false);
+      this.cargandoCompras.set(false);
+    }
+  }
+
+  async cargarProveedores(): Promise<void> {
+    this.cargandoProveedores.set(true);
+    try {
+      this.proveedores.set(await firstValueFrom(this.api.listarProveedores()));
+      this.avisarProveedores('');
+    } catch (e: unknown) {
+      this.avisarProveedores(this._detalleError(e, 'No se pudieron cargar los proveedores. Verifique que la API de compras esté activa.'));
+    } finally {
+      this.cargandoProveedores.set(false);
     }
   }
 
