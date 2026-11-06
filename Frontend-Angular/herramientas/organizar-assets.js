@@ -46,16 +46,35 @@ if (movidos.length === 0) {
 // sus rutas relativas ("./chunk-…js") ya resuelven automáticamente en /js.
 const html = path.join(base, 'index.html');
 let contenido = fs.readFileSync(html, 'utf8');
-let reemplazos = 0;
-const antes = contenido;
+let seReescribioHtml = false;
+const antesHtml = contenido;
 for (const destino of movidos) {
   const nombre = path.basename(destino);
   const prefijo = destino.startsWith('js/') ? 'js/' : 'css/';
   contenido = contenido.split('"' + nombre + '"').join('"' + prefijo + nombre + '"');
 }
-if (contenido !== antes) {
+if (contenido !== antesHtml) {
   fs.writeFileSync(html, contenido);
-  reemplazos = 1;
+  seReescribioHtml = true;
 }
 
-console.log('organizar-assets: ' + movidos.length + ' archivos movidos, referencias de index.html reescritas (' + reemplazos + ').');
+// Los CSS movidos resuelven sus url() relativas contra la CARPETA del propio
+// css (/css/...): las referencias a archivos en media/ (fuentes, imágenes)
+// deben ser absolutas desde la raíz del sitio ("/media/...").
+let archivosCssCorregidos = 0;
+for (const destino of movidos) {
+  if (!destino.startsWith('css/')) continue;
+  const archivo = path.join(base, destino);
+  let css = fs.readFileSync(archivo, 'utf8');
+  const antesCss = css;
+  css = css.split('("./media/').join('("/media/');
+  css = css.split('(./media/').join('(/media/');
+  if (css !== antesCss) {
+    fs.writeFileSync(archivo, css);
+    archivosCssCorregidos++;
+  }
+}
+
+console.log('organizar-assets: ' + movidos.length + ' archivos movidos, '
+  + (seReescribioHtml ? 'index.html reescrito, ' : '')
+  + archivosCssCorregidos + ' css con url() absolutos.');
