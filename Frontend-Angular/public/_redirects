@@ -1,3 +1,8 @@
-/*.js    /index.html    404
-/*.css   /index.html    404
-/*       /index.html    200
+# El splat "/*.js" no es un patrón válido en Netlify (el asterisco solo se
+# acepta al final del segmento). Los bundles se agrupan en carpetas /js y /css
+# (script post-build herramientas/organizar-assets.js) para aplicar 404 por
+# prefijo. El fallback SPA vive en netlify.toml (/* -> /index.html 200).
+# Nota: este archivo se procesa SIEMPRE antes que netlify.toml; aquí solo
+# van las reglas de assets 404.
+/js/*    /index.html    404
+/css/*   /index.html    404

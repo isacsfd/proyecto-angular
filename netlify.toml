@@ -2,24 +2,25 @@
 # Compila el frontend monorepo (carpeta Frontend-Angular) en producción.
 [build]
   base = "Frontend-Angular"
-  command = "npm ci && npm run build -- --configuration production"
+  command = "npm ci && npm run build:netlify"
   publish = "dist/Frontend-Angular/browser"
 
 [build.environment]
   NODE_VERSION = "24"
 
 # SPA Angular: cualquier ruta recargada se sirve por index.html (sin 404).
-# Recorte: los assets .js/.css inexistentes responden 404 (no caen al fallback).
-# Un asset existente siempre se sirve primero (Netlify no aplica redirects con
-# force=false cuando el archivo existe), y las rutas de Angular conservan el
-# fallback al no tener extensión de asset.
+# Recorte: los bundles se agrupan en /js y /css (script post-build
+# herramientas/organizar-assets.js) para poder aplicar 404 por prefijo: el
+# splat "/*.js" NO es un patrón válido en Netlify (el asterisco solo se
+# acepta al final del segmento). Los assets existentes se sirven antes que
+# cualquier regla; las rutas de Angular conservan el fallback.
 [[redirects]]
-  from = "/*.js"
+  from = "/js/*"
   to = "/index.html"
   status = 404
 
 [[redirects]]
-  from = "/*.css"
+  from = "/css/*"
   to = "/index.html"
   status = 404
 
