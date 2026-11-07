@@ -1,0 +1,88 @@
+# Respaldo diario del módulo de compras (TiDB Cloud Starter, base biblioteca_iub_compras).
+#
+# Por qué existe: los backups automáticos de una instancia TiDB Cloud Starter
+# FREE solo se retienen 1 día. Este job copia el volcado FUERA de TiDB
+# (artefactos de GitHub con retención de 30 días) para cumplir el requisito de
+# backups externos. Los dumps NUNCA se guardan en el repositorio.
+#
+# Herramienta: mysqldump (cliente MySQL 8) — TiDB mantiene compatibilidad con
+# las herramientas del ecosistema MySQL (protocolo MySQL 5.7/8.0). La conexión
+# siempre usa TLS con el CA de TiDB y verificación de certificado activada.
+#
+# Secrets requeridos (Configuración -> Secrets and variables -> Actions):
+#   TIDB_HOST, TIDB_PORT, TIDB_USER, TIDB_PASSWORD, TIDB_DATABASE, TIDB_SSL_CA
+
+name: backup-compras
+
+on:
+  schedule:
+    - cron: "0 5 * * *"   # diario, 05:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: none
+
+concurrency:
+  group: backup-compras
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Instalar cliente MySQL
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mysql-client >/dev/null
+          mysqldump --version
+
+      - name: Volcar la base de datos (TLS con CA verificada)
+        env:
+          TIDB_HOST: ${{ secrets.TIDB_HOST }}
+          TIDB_PORT: ${{ secrets.TIDB_PORT }}
+          TIDB_USER: ${{ secrets.TIDB_USER }}
+          TIDB_PASSWORD: ${{ secrets.TIDB_PASSWORD }}
+          TIDB_DATABASE: ${{ secrets.TIDB_DATABASE }}
+          TIDB_SSL_CA: ${{ secrets.TIDB_SSL_CA }}
+        run: |
+          set -euo pipefail
+          for v in TIDB_HOST TIDB_PORT TIDB_USER TIDB_PASSWORD TIDB_DATABASE TIDB_SSL_CA; do
+            test -n "${!v:-}" || { echo "Falta el secret $v"; exit 1; }
+          done
+          # La CA llega con \n escapado (mismo formato que en Render).
+          printf '%b' "$TIDB_SSL_CA" > ca.pem
+          chmod 600 ca.pem
+          MARCA=$(date -u +%Y%m%d-%H%M%S)
+          mysqldump \
+            --host="$TIDB_HOST" \
+            --port="$TIDB_PORT" \
+            --user="$TIDB_USER" \
+            --password="$TIDB_PASSWORD" \
+            --ssl-mode=VERIFY_IDENTITY \
+            --ssl-ca=ca.pem \
+            --single-transaction \
+            --skip-lock-tables \
+            --no-tablespaces \
+            --set-gtid-purged=OFF \
+            --column-statistics=0 \
+            --default-character-set=utf8mb4 \
+            --result-file="backup-compras-$MARCA.sql" \
+            "$TIDB_DATABASE"
+          gzip -9 "backup-compras-$MARCA.sql"
+          echo "VOLCADO=backup-compras-$MARCA.sql.gz" >> "$GITHUB_ENV"
+
+      - name: Verificar integridad del volcado
+        run: |
+          set -euo pipefail
+          test -n "${VOLCADO:-}" || { echo "No se definió el archivo de volcado"; exit 1; }
+          zcat "$VOLCADO" | grep -q "Dump completed" || { echo "El volcado está incompleto"; exit 1; }
+          ls -lh "$VOLCADO"
+
+      - name: Subir copia fuera de TiDB (retención 30 días)
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-compras-${{ github.run_id }}
+          path: backup-compras-*.sql.gz
+          retention-days: 30
