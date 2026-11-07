@@ -146,6 +146,52 @@ test('CRUD de compra y detalle valida referencias', async () => {
   assert.equal(duplicate.status, 409);
 });
 
+test('el total guardado coincide con la suma exacta de los detalles (sin deriva decimal)', async () => {
+  const nit = `NIT-T-${Date.now()}`;
+  const provider = await request(app)
+    .post('/api/proveedores')
+    .set(adminHeaders())
+    .send({ razon_social: 'Proveedor Total Exacto', nit });
+  assert.equal(provider.status, 201);
+
+  const purchase = await request(app)
+    .post('/api/compras')
+    .set(adminHeaders())
+    .send({ proveedor_id: provider.body.id, numero_factura: `FAC-T-${Date.now()}`, total: 0 });
+  assert.equal(purchase.status, 201);
+
+  const detalleLibros = await request(app)
+    .post(`/api/compras/${purchase.body.id}/detalles`)
+    .set(adminHeaders())
+    .send({ descripcion: '2 libros', cantidad: 2, precio_unitario: 60000 });
+  assert.equal(detalleLibros.status, 201);
+
+  const detalleRevista = await request(app)
+    .post(`/api/compras/${purchase.body.id}/detalles`)
+    .set(adminHeaders())
+    .send({ descripcion: '1 revista', cantidad: 1, precio_unitario: 0.3 });
+  assert.equal(detalleRevista.status, 201);
+
+  // decimalNumbers mapea DECIMAL(12,2) a número JS: 0.30 ya inalterado.
+  const listado = await request(app).get(`/api/compras/${purchase.body.id}/detalles`).set(adminHeaders());
+  assert.equal(listado.body[1].precio_unitario, 0.3);
+
+  // Suma exacta en DECIMAL: 2*60000.00 + 1*0.30 = 120000.30 (12000030 centavos).
+  const [sumaRows] = await pool.query(
+    'SELECT SUM(cantidad * precio_unitario) AS suma FROM detalle_compra WHERE compra_id = ? AND estado = 1',
+    [purchase.body.id],
+  );
+  const sumaCents = Math.round(Number(sumaRows[0].suma) * 100);
+  assert.equal(sumaCents, 12000030);
+
+  const actualizada = await request(app)
+    .put(`/api/compras/${purchase.body.id}`)
+    .set(adminHeaders())
+    .send({ total: 120000.3 });
+  assert.equal(actualizada.status, 200);
+  assert.equal(actualizada.body.total, 120000.3);
+});
+
 test('rechaza campos desconocidos y entradas inválidas', async () => {
   const response = await request(app)
     .post('/api/proveedores')

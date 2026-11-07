@@ -49,10 +49,10 @@ services:
   - type: web
     name: biblioteca-iub-express        # no modifica el FastAPI existente
     runtime: node
-    # Plan de pago mínimo: API de compras siempre activa (sin spin-down de 15 min
-    # del plan Free) y siempre apta para hablar con el MySQL privado por la red
-    # privada (plan Free ya puede enviar; el requisito de pago es del DISCO).
-    plan: starter
+    # Alternativa 100% gratuita (sin tarjeta): Express Free + TiDB Cloud Starter.
+    # Trade-off aceptado: el plan Free se apaga tras ~15 min de inactividad
+    # (~50 s de arranque en la primera petición después del descanso).
+    plan: free
     rootDir: express-api
     buildCommand: npm ci --omit=dev
     startCommand: npm start
@@ -74,14 +74,16 @@ services:
         value: "2500"
       - key: MM_MYSQL_HOST            # MySQL de compras (REQUIERE autorización para nube)
         sync: false
-      - key: MM_MYSQL_PORT
-        value: "3306"
+      - key: MM_MYSQL_PORT            # TiDB Cloud Starter: endpoint público en el puerto 4000
+        value: "4000"
       - key: MM_MYSQL_USER
         sync: false
       - key: MM_MYSQL_PASSWORD
         sync: false
       - key: MM_MYSQL_DATABASE
         value: biblioteca_iub_compras
+      - key: MM_MYSQL_SSL_CA          # certificado CA de TiDB (solo en el panel, nunca en el repo)
+        sync: false
       - key: EXPRESS_CORS_ORIGINS     # origen del frontend desplegado
         sync: false
       - key: EXPRESS_RATE_LIMIT_MAX

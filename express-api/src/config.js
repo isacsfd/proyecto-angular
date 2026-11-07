@@ -45,6 +45,14 @@ const config = {
     database: process.env.MM_MYSQL_DATABASE || 'biblioteca_iub_compras',
     connectionLimit: entero('MM_MYSQL_POOL', 5),
     connectTimeout: entero('MM_MYSQL_CONNECT_TIMEOUT', 5000),
+    // Las conexiones inactivas se reciclan a los 4 minutos: TiDB Cloud Starter
+    // corta las conexiones inactivas de más de 30 minutos, así que con 4 minutos
+    // el driver siempre cierra primero y el pool reabre sin errores de socket.
+    idleTimeoutMs: entero('MM_MYSQL_IDLE_TIMEOUT_MS', 240000),
+    // CA TLS para MySQL en la nube (TiDB Cloud Starter). Vacío = el pool se
+    // conecta sin TLS (compatible con el MySQL local de XAMPP). El certificado
+    // llega en la variable con los saltos de línea escapados (\n).
+    sslCa: (process.env.MM_MYSQL_SSL_CA || '').split('\\n').join('\n').trim(),
   },
 };
 
