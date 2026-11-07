@@ -58,15 +58,17 @@ export interface DetallePayload {
 }
 
 /**
- * ComprasService — consume Proveedores, Compras y Detalles desde la API
- * API Express local cuando `environment.expressApiUrl` está configurada. En
- * producción queda el fallback a FastAPI hasta autorizar un despliegue Express.
+ * ComprasService — consume Proveedores, Compras y Detalles exclusivamente desde
+ * la API Express (Render + TiDB). El endpoint de compras de FastAPI quedó
+ * limitado al entorno local (docker) y devuelve 503 en producción, por lo que
+ * el fallback fue eliminado: si `expressApiUrl` no está configurada el error
+ * es explícito en build en lugar de fallar en silencio contra FastAPI.
  * El token JWT se adjunta automáticamente por jwtInterceptor.
  */
 @Injectable({ providedIn: 'root' })
 export class ComprasService {
   private readonly http = inject(HttpClient);
-  private readonly base = environment.expressApiUrl || environment.apiUrl;
+  private readonly base = environment.expressApiUrl;
   private readonly noCacheOptions = {
     headers: new HttpHeaders({
       'Cache-Control': 'no-cache',
