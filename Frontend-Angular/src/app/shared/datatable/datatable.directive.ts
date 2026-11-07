@@ -17,19 +17,52 @@ declare const $: any;
  * las filas del <tbody> tengan ese mismo número de celdas. Las filas de
  * estado vacío con <td colspan="N"> rompen ese contrato y provocan el error
  * "Requested unknown parameter 'N' ...".
- * Regla: compatible solo si hay al menos una fila y todas comparten el
- * número de columnas del encabezado.
+ * Regla: compatible solo si hay al menos una fila, en TODOS los tbodies, y
+ * todas comparten el número de columnas del encabezado sin rowspan/colspan.
  */
 export function tablaCompatibleConDatatables(tabla: HTMLTableElement | null): boolean {
   if (!tabla || !tabla.tHead || !tabla.tBodies.length) return false;
   const columnas = tabla.tHead.rows[0]?.cells.length ?? 0;
   if (columnas === 0) return false;
-  const filas = tabla.tBodies[0].rows;
-  if (filas.length === 0) return false;
-  for (let i = 0; i < filas.length; i++) {
-    if (filas[i].cells.length !== columnas) return false;
+  let total = 0;
+  for (const cuerpo of Array.from(tabla.tBodies)) {
+    for (let i = 0; i < cuerpo.rows.length; i++) {
+      const fila = cuerpo.rows[i];
+      if (fila.cells.length !== columnas) return false;
+      for (let c = 0; c < fila.cells.length; c++) {
+        if (fila.cells[c].colSpan !== 1 || fila.cells[c].rowSpan !== 1) return false;
+      }
+      total++;
+    }
   }
-  return true;
+  return total > 0;
+}
+
+/**
+ * ¿El número de filas del DOM coincide con el de `dtData`?
+ * Puede haber filas restauradas por DataTables (destroy) o filas pendientes de
+ * render por change detection diferido (zoneless); inicializar en ese estado
+ * corrige mal los datos. La verificación se hace justo antes de construir y
+ * después de construir la instancia.
+ */
+export function tablaCoincideConDatos(tabla: HTMLTableElement | null, esperadas: number): boolean {
+  if (!tabla) return false;
+  let total = 0;
+  for (const cuerpo of Array.from(tabla.tBodies)) {
+    // Solo se cuentan filas reales de datos; la fila de estado vacío varias
+    // celdas cuenta igualmente (el guard de compatibilidad la rechaza antes).
+    total += cuerpo.rows.length;
+  }
+  return total === esperadas;
+}
+
+/**
+ * Decisión única de inicialización: el DOM debe ser compatible con DataTables
+ * Y el número de filas visible debe corresponder exactamente a `dtData`.
+ * (Ver datatable.directive.ts Init(): se reevalúa en el mismo latido.)
+ */
+export function puedeInicializarDatatables(tabla: HTMLTableElement | null, filasEsperadas: number): boolean {
+  return tablaCompatibleConDatatables(tabla) && tablaCoincideConDatos(tabla, filasEsperadas);
 }
 
 /**
@@ -94,6 +127,13 @@ export class DatatableDirective implements AfterViewInit, OnChanges, OnDestroy {
       const firma = this.firma(nueva);
       if (firma !== this.firmaAnterior) {
         this.firmaAnterior = firma;
+        // Destrucción SINCRÓNICA antes de que Angular re-renderice tbody:
+        // DataTables restaura en sessionStorage las filas que capturó al
+        // construirse; si se destruye dentro del rAF, Angular ya pudo haber
+        // cambiado el tbody y el destroy reinyecta filas fantasma (orígenes del
+        // warning). Aquí el DOM aún es el que dt conoce, por lo que la
+        // restauración es exactamente lo que Angular va a reemplazar.
+        this.liberar();
         this.programarReinicio();
       }
     }
@@ -123,12 +163,16 @@ export class DatatableDirective implements AfterViewInit, OnChanges, OnDestroy {
   private programarReinicio(): void {
     if (this.reinitPendiente) return;
     this.reinitPendiente = true;
-    requestAnimationFrame(() => {
+    const correr = () => {
       this.reinitPendiente = false;
       if (this.destruyendo || !this.el.isConnected) return;
-      this.liberar();
       this.init();
-    });
+    };
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(correr);
+    } else {
+      setTimeout(correr, 0);
+    }
   }
 
   private liberar(): void {
@@ -143,10 +187,14 @@ export class DatatableDirective implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private init(): void {
-    // Estado vacío con fila colspan: no inicializar DataTables (se queda la
-    // tabla plana de Angular con su mensaje). Al llegar datos (cambio de
-    // dtData), programarReinicio vuelve a intentar la inicialización.
-    if (!tablaCompatibleConDatatables(this.el)) {
+    // Doble verificación en el MISMO latido en que se construye DataTables:
+    // 1) el DOM debe ser compatible (todas las filas completas, sin colspan) y
+    // 2) el número de filas del DOM debe coincidir EXACTAMENTE con dtData:
+    //    si Angular (zoneless) aún no ha re-renderizado tbody o ya dejó la
+    //    fila de estado vacío, inicializar aquí consumiría filas inválidas
+    //    ("Requested unknown parameter ..."). En ese caso se queda la tabla
+    //    plana y se reintenta con el siguiente cambio de datos.
+    if (!puedeInicializarDatatables(this.el, this.dtData.length)) {
       this.liberar();
       return;
     }
@@ -165,11 +213,19 @@ export class DatatableDirective implements AfterViewInit, OnChanges, OnDestroy {
           '<"row"<"col-sm-12"tr>>' +
           '<"row mt-2"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
       });
-      if (this.dtBuscar) {
+      // Verificación posterior: DataTables debió registrar exactamente las
+      // filas de dtData. Cualquier desajuste (restauraciones u otras
+      // mutaciones) invalida la instancia para no mostrar datos corruptos.
+      if (this.dt && this.dt.rows().count() !== this.dtData.length) {
+        this.liberar();
+        return;
+      }
+      if (this.dt && this.dtBuscar) {
         this.dt.search(this.dtBuscar).draw();
       }
     } catch (err) {
       console.error('Error al inicializar DataTable:', err);
+      this.liberar();
     }
   }
 }
