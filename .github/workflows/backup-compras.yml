@@ -54,6 +54,9 @@ jobs:
           # La CA llega con \n escapado (mismo formato que en Render).
           printf '%b' "$TIDB_SSL_CA" > ca.pem
           chmod 600 ca.pem
+          # Nota TiDB: se omite --single-transaction porque mysqldump termina con
+          # "ROLLBACK TO SAVEPOINT sp does not exist (1305)" en TiDB (incompatibilidad
+          # conocida); el volcado se garantiza con --skip-lock-tables sobre dataset corto.
           MARCA=$(date -u +%Y%m%d-%H%M%S)
           mysqldump \
             --host="$TIDB_HOST" \
@@ -62,7 +65,6 @@ jobs:
             --password="$TIDB_PASSWORD" \
             --ssl-mode=VERIFY_IDENTITY \
             --ssl-ca=ca.pem \
-            --single-transaction \
             --skip-lock-tables \
             --no-tablespaces \
             --set-gtid-purged=OFF \
