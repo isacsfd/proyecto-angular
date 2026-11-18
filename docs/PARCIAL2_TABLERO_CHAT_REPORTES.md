@@ -143,6 +143,10 @@ specs: `chat-url.spec.ts`, `tablero.datos.spec.ts`, `graficos.spec.ts`.
 
 - WebSocket en memoria: con una sola instancia de Render Free funciona; con
   escalamiento horizontal se necesitaría un broker (no inventado aquí).
+- **Soporte WS en uvicorn (corregido):** `requirements.txt` instalaba `uvicorn`
+  plano, sin librería WebSocket — uvicorn rechazaba los upgrades con 404
+  (advertencia: "No supported WebSocket library detected"). Se añadió
+  `websockets` a los requirements; validado local y en producción.
 - Render Free puede "dormir" el servicio: la primera conexión del chat puede
   tardar ~50 s en despertar; la UI lo indica y reintenta.
 - Los eventos automáticos implementados son los que existen en el repositorio
