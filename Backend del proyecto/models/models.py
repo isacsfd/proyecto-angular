@@ -63,3 +63,26 @@ class LibraryAccess(Base):
     status = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
+
+
+# ─── Notificaciones por correo (parcial 2: reportes y avisos) ────────────────
+class NotificacionEmail(Base):
+    """Seguimiento administrativo de cada correo enviado o intentado.
+
+    Estados: pendiente | enviado | fallido | no_configurado.
+    Cada envío (reporte solicitado, aviso automático de registro de usuario)
+    queda registrado aquí para que los administradores auditen su estado.
+    """
+
+    __tablename__ = "notificaciones_email"
+
+    id = Column(Integer, primary_key=True, index=True)
+    destinatario_id = Column(Integer, nullable=True, index=True)
+    destinatario_email = Column(String(100), nullable=False, index=True)
+    # tipo: reporte_generado | registro_usuario
+    tipo = Column(String(50), nullable=False, index=True)
+    asunto = Column(String(200), nullable=False)
+    estado = Column(String(20), nullable=False, default="pendiente", index=True)
+    detalle = Column(String(500), nullable=True)
+    creado_en = Column(DateTime, nullable=False, default=datetime.now, server_default=func.now())
+    enviado_en = Column(DateTime, nullable=True)

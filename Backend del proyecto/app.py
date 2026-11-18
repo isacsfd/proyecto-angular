@@ -23,6 +23,8 @@ from requests.user_request import UserCreateRequest
 from routers.access_router import access_router
 from routers.ia_router import ia_router
 from routers.compras_router import router as compras_router
+from routers.chat_router import router as chat_router
+from routers.notificaciones_router import router as notificaciones_router
 from fastapi.staticfiles import StaticFiles
 from passlib.context import CryptContext
 from auth import (
@@ -124,6 +126,8 @@ app.add_middleware(
 app.include_router(access_router)
 app.include_router(ia_router)
 app.include_router(compras_router)
+app.include_router(chat_router)
+app.include_router(notificaciones_router)
 
 def get_db():
     db = SessionLocal()
@@ -449,6 +453,16 @@ def create_user(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Notificación automática por registro de usuario (parcial 2): aviso al
+    # correo registrado. Best-effort: nunca rompe la creación del usuario y
+    # el intento queda registrado en notificaciones_email.
+    from services.notificaciones_service import notificar_registro_usuario
+    try:
+        notificar_registro_usuario(db, new_user)
+    except Exception:
+        db.rollback()
+
     return new_user
 
 

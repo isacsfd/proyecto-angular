@@ -44,6 +44,20 @@ services:
         sync: false
       - key: MM_MYSQL_DATABASE
         sync: false
+      # ─── Correo (parcial 2: reportes y notificaciones automáticas) ───
+      # Se introducen en el panel de Render; nunca en el repositorio.
+      - key: MM_SMTP_HOST
+        sync: false
+      - key: MM_SMTP_PORT
+        sync: false
+      - key: MM_SMTP_USER
+        sync: false
+      - key: MM_SMTP_PASSWORD
+        sync: false
+      - key: MM_SMTP_FROM
+        sync: false
+      - key: MM_SMTP_MODO
+        sync: false
 
   # ───────── SERVICIO NUEVO: API Express (proveedores/compras/detalles) ─────────
   - type: web

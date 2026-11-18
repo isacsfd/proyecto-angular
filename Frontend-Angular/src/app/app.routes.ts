@@ -15,6 +15,9 @@ export const routes: Routes = [
       { path: 'usuarios', canActivate: [moduloGuard('gestion_usuarios')], loadComponent: () => import('./features/admin/pages/usuarios/usuarios').then((m) => m.AdminUsuarios) },
       { path: 'prestamos', canActivate: [moduloGuard('gestion_prestamos')], loadComponent: () => import('./features/admin/pages/prestamos/prestamos').then((m) => m.AdminPrestamos) },
       { path: 'estadisticas', canActivate: [moduloGuard('estadisticas')], loadComponent: () => import('./features/admin/pages/estadisticas/estadisticas').then((m) => m.AdminEstadisticas) },
+      { path: 'tablero', canActivate: [moduloGuard('estadisticas')], loadComponent: () => import('./features/admin/pages/tablero/tablero').then((m) => m.AdminTablero) },
+      { path: 'reportes', canActivate: [moduloGuard('estadisticas')], loadComponent: () => import('./features/reportes/pages/reportes/reportes').then((m) => m.PaginaReportes) },
+      { path: 'chat', canActivate: [moduloGuard('dashboard')], loadComponent: () => import('./features/chat/pages/chat/chat').then((m) => m.ChatEnVivo) },
       { path: 'ingresos', canActivate: [moduloGuard('ingresos')], loadComponent: () => import('./features/admin/pages/ingresos/ingresos').then((m) => m.AdminIngresos) },
       { path: 'proveedores', canActivate: [moduloGuard('gestion_proveedores')], loadComponent: () => import('./features/admin/pages/proveedores/proveedores').then((m) => m.AdminProveedores) },
       { path: 'compras', canActivate: [moduloGuard('gestion_compras')], loadComponent: () => import('./features/admin/pages/compras/compras').then((m) => m.AdminCompras) },
@@ -30,6 +33,8 @@ export const routes: Routes = [
       { path: 'catalogo', canActivate: [moduloGuard('catalogo')], loadComponent: () => import('./features/user/pages/catalogo/catalogo').then((m) => m.UserCatalogo) },
       { path: 'mis-prestamos', canActivate: [moduloGuard('mis_prestamos')], loadComponent: () => import('./features/user/pages/mis-prestamos/mis-prestamos').then((m) => m.UserMisPrestamos) },
       { path: 'dispositivos', canActivate: [moduloGuard('dispositivos')], loadComponent: () => import('./features/user/pages/dispositivos/dispositivos').then((m) => m.UserDispositivos) },
+      { path: 'chat', canActivate: [moduloGuard('inicio')], loadComponent: () => import('./features/chat/pages/chat/chat').then((m) => m.ChatEnVivo) },
+      { path: 'reportes', canActivate: [moduloGuard('inicio')], loadComponent: () => import('./features/reportes/pages/reportes/reportes').then((m) => m.PaginaReportes) },
     ],
   },
 

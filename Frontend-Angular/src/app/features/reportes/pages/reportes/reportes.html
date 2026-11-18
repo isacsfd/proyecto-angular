@@ -1,0 +1,203 @@
+<section class="container-fluid py-4">
+  <header class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1"><i class="bi bi-file-earmark-bar-graph text-iub me-1"></i>Reportes consolidados</h1>
+      <p class="text-muted mb-0 small">
+        Genere, descargue (PDF/XLSX) y envíe al correo registrado información de la plataforma según filtros.
+      </p>
+    </div>
+    @if (definicion(); as def) {
+      <span class="badge text-bg-light border">{{ def.datos.length }} registro(s) con los filtros actuales</span>
+    }
+  </header>
+
+  @if (error()) {
+    <div class="alert alert-danger py-2" role="alert">{{ error() }}</div>
+  }
+  @if (mensaje()) {
+    <div class="alert alert-{{ tipoMensaje() }} py-2" role="alert">{{ mensaje() }}</div>
+  }
+
+  <div class="row g-3">
+    <!-- Configuración del reporte -->
+    <div class="col-lg-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-semibold"><i class="bi bi-funnel me-1"></i>Filtros del reporte</div>
+        <div class="card-body">
+          <label class="form-label fw-semibold small">Tipo de reporte</label>
+          <select class="form-select mb-3" name="tipo" [ngModel]="tipo()" (ngModelChange)="cambiarTipo($event)">
+            @for (opcion of opcionesDisponibles(); track opcion.valor) {
+              <option [ngValue]="opcion.valor">{{ opcion.texto }}</option>
+            }
+          </select>
+
+          @if (aplicaSede()) {
+            <label class="form-label fw-semibold small">Sede</label>
+            <select class="form-select mb-3" name="sede" [ngModel]="sede()" (ngModelChange)="sede.set($event); recalcular()">
+              <option [ngValue]="">Todas</option>
+              @for (s of sedes; track s) {
+                <option [ngValue]="s">{{ s }}</option>
+              }
+            </select>
+            <p class="text-muted small">Los roles no institucionales ven únicamente su sede.</p>
+          }
+
+          @if (aplicaEstado()) {
+            <label class="form-label fw-semibold small">Estado</label>
+            <select class="form-select mb-3" name="estado" [ngModel]="estado()" (ngModelChange)="estado.set($event); recalcular()">
+              <option [ngValue]="">Todos</option>
+              @for (e of estadosDisponibles(); track e) {
+                <option [ngValue]="e">{{ e }}</option>
+              }
+            </select>
+          }
+
+          @if (aplicaFechas()) {
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-semibold small">Desde</label>
+                <input type="date" class="form-control" name="desde" [ngModel]="fechaInicio()" (ngModelChange)="fechaInicio.set($event); recalcular()">
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-semibold small">Hasta</label>
+                <input type="date" class="form-control" name="hasta" [ngModel]="fechaFin()" (ngModelChange)="fechaFin.set($event); recalcular()">
+              </div>
+            </div>
+          }
+
+          <label class="form-label fw-semibold small">Buscar</label>
+          <input class="form-control" name="busqueda" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event); recalcular()"
+                 placeholder="Texto libre en los registros…">
+        </div>
+        <div class="card-footer bg-white d-flex flex-column gap-2">
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-danger flex-fill" (click)="descargar('pdf')" [disabled]="cargando() || !definicion()?.datos.length">
+              <i class="bi bi-filetype-pdf"></i> PDF
+            </button>
+            <button type="button" class="btn btn-outline-success flex-fill" (click)="descargar('excel')" [disabled]="cargando() || !definicion()?.datos.length">
+              <i class="bi bi-file-earmark-excel"></i> XLSX
+            </button>
+          </div>
+          <hr class="my-1">
+          <label class="form-label fw-semibold small mb-0">Enviar al correo registrado</label>
+          <select class="form-select form-select-sm" name="formatoEnvio" [ngModel]="formatoEnvio()" (ngModelChange)="formatoEnvio.set($event)">
+            <option [ngValue]="'pdf'">Archivo PDF</option>
+            <option [ngValue]="'xlsx'">Archivo XLSX</option>
+          </select>
+          <button type="button" class="btn btn-iub text-white" (click)="enviarPorCorreo()"
+                  [disabled]="enviando() || cargando() || !definicion()?.datos.length">
+            @if (enviando()) {
+              <span class="spinner-border spinner-border-sm me-1"></span>Enviando…
+            } @else {
+              <i class="bi bi-envelope-arrow-up"></i> Enviar a {{ correoRegistrado() || '(sin correo)' }}
+            }
+          </button>
+          @if (smtpConfigurado() === false) {
+            <p class="text-muted small mb-0">
+              El servidor no tiene SMTP configurado (MM_SMTP_*): el envío quedará registrado como
+              <span class="badge text-bg-warning">no_configurado</span> para seguimiento administrativo.
+            </p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Vista previa -->
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-table me-1"></i>Vista previa — {{ definicion()?.titulo }}</span>
+          @if (cargando()) {
+            <span class="spinner-border spinner-border-sm text-primary"></span>
+          }
+        </div>
+        <div class="table-responsive">
+          @if (definicion(); as def) {
+            <table class="table table-hover align-middle mb-0" appDatatable [dtData]="def.datos" [dtBuscar]="busqueda()">
+              <thead>
+                <tr>
+                  @for (col of def.columnas; track col) {
+                    <th>{{ col }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of def.datos; track $index) {
+                  <tr>
+                    @for (valor of valoresDe(fila); track $index) {
+                      <td>{{ valor }}</td>
+                    }
+                  </tr>
+                }
+                @if (!def.datos.length) {
+                  <tr>
+                    <td [colSpan]="def.columnas.length" class="text-center text-muted py-4">
+                      Sin registros con los filtros actuales.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="text-muted p-4 mb-0">Cargando datos del reporte…</p>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Seguimiento administrativo de envíos y notificaciones -->
+  @if (esAdmin()) {
+    <div class="card border-0 shadow-sm mt-3">
+      <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="bi bi-envelope-check me-1"></i>Seguimiento de envíos y notificaciones</span>
+        <div class="d-flex gap-2 align-items-center">
+          <select class="form-select form-select-sm w-auto" name="filtroTipo"
+                  [ngModel]="filtroTipoNotificacion()" (ngModelChange)="filtroTipoNotificacion.set($event); cargarNotificaciones()">
+            <option [ngValue]="">Todos los tipos</option>
+            <option [ngValue]="'reporte_generado'">Reportes</option>
+            <option [ngValue]="'registro_usuario'">Registro de usuarios</option>
+          </select>
+          <select class="form-select form-select-sm w-auto" name="filtroEstado"
+                  [ngModel]="filtroEstadoNotificacion()" (ngModelChange)="filtroEstadoNotificacion.set($event); cargarNotificaciones()">
+            <option [ngValue]="">Todos los estados</option>
+            <option [ngValue]="'enviado'">Enviado</option>
+            <option [ngValue]="'fallido'">Fallido</option>
+            <option [ngValue]="'no_configurado'">No configurado</option>
+            <option [ngValue]="'pendiente'">Pendiente</option>
+          </select>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="cargarNotificaciones()">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>#</th><th>Tipo</th><th>Destinatario</th><th>Asunto</th>
+              <th>Estado</th><th>Detalle</th><th>Creado</th><th>Enviado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (n of notificaciones(); track n.id) {
+              <tr>
+                <td>{{ n.id }}</td>
+                <td><span class="badge text-bg-light border">{{ n.tipo }}</span></td>
+                <td class="small">{{ n.destinatario_email }}</td>
+                <td class="small">{{ n.asunto }}</td>
+                <td><span class="badge {{ claseEstadoNotificacion(n.estado) }}">{{ n.estado }}</span></td>
+                <td class="small text-muted">{{ n.detalle }}</td>
+                <td class="small">{{ n.creado_en | date:'short' }}</td>
+                <td class="small">{{ n.enviado_en ? (n.enviado_en | date:'short') : '—' }}</td>
+              </tr>
+            }
+            @if (!notificaciones().length) {
+              <tr><td colspan="8" class="text-center text-muted py-3">Sin envíos registrados con estos filtros.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</section>

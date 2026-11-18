@@ -29,11 +29,11 @@ from fastapi.testclient import TestClient  # noqa: E402
 from app import app, hash_password, limitador_login  # noqa: E402
 from database import SessionLocal  # noqa: E402
 from database import Libro, Prestamos, Dispositivo, PrestamoDispositivo, Configuracion  # noqa: E402
-from models.models import UserTable, LibraryAccess, Rol, Modulo, ModuloRol  # noqa: E402
+from models.models import UserTable, LibraryAccess, Rol, Modulo, ModuloRol, NotificacionEmail  # noqa: E402
 from services.ia import busqueda_semantica  # noqa: E402
 from services.rate_limit import limitador_qr  # noqa: E402
 
-TABLAS = [ModuloRol, PrestamoDispositivo, Prestamos, LibraryAccess, Dispositivo, Libro, UserTable, Modulo, Rol, Configuracion]
+TABLAS = [NotificacionEmail, ModuloRol, PrestamoDispositivo, Prestamos, LibraryAccess, Dispositivo, Libro, UserTable, Modulo, Rol, Configuracion]
 
 # La matriz RBAC se importa de la fuente única para que las pruebas no queden
 # desincronizadas cuando cambien los permisos.

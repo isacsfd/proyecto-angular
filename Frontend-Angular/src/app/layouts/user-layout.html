@@ -31,6 +31,12 @@
       <a class="nav-link" routerLink="/inicio/dispositivos" routerLinkActive="active">
         <i class="bi bi-laptop"></i>Dispositivos
       </a>
+      <a class="nav-link" routerLink="/inicio/chat" routerLinkActive="active">
+        <i class="bi bi-chat-dots"></i>Chat en vivo
+      </a>
+      <a class="nav-link" routerLink="/inicio/reportes" routerLinkActive="active">
+        <i class="bi bi-file-earmark-bar-graph"></i>Reportes
+      </a>
     </nav>
     <div class="mt-auto">
       <button class="btn btn-outline-light w-100" (click)="salir()">
@@ -51,6 +57,8 @@
           <li><a class="dropdown-item" routerLink="/inicio/catalogo" routerLinkActive="active" (click)="cerrarMovil()">Catálogo y búsqueda IA</a></li>
           <li><a class="dropdown-item" routerLink="/inicio/mis-prestamos" routerLinkActive="active" (click)="cerrarMovil()">Mis préstamos</a></li>
           <li><a class="dropdown-item" routerLink="/inicio/dispositivos" routerLinkActive="active" (click)="cerrarMovil()">Dispositivos</a></li>
+          <li><a class="dropdown-item" routerLink="/inicio/chat" routerLinkActive="active" (click)="cerrarMovil()">Chat en vivo</a></li>
+          <li><a class="dropdown-item" routerLink="/inicio/reportes" routerLinkActive="active" (click)="cerrarMovil()">Reportes</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item text-danger" href="javascript:void(0)" (click)="salir()"><i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión</a></li>
         </ul>
