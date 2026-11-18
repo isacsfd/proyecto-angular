@@ -1,5 +1,6 @@
 ﻿fastapi
 uvicorn
+websockets
 sqlalchemy==2.0.43
 passlib==1.7.4
 python-jose[cryptography]
