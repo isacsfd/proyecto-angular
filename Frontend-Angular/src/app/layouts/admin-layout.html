@@ -63,6 +63,19 @@
           <i class="bi bi-graph-up-arrow"></i>Estadísticas
         </a>
       }
+      @if (puede('estadisticas')) {
+        <a class="nav-link" routerLink="/admin/tablero" routerLinkActive="active">
+          <i class="bi bi-speedometer2"></i>Tablero analítico
+        </a>
+      }
+      @if (puede('estadisticas')) {
+        <a class="nav-link" routerLink="/admin/reportes" routerLinkActive="active">
+          <i class="bi bi-file-earmark-bar-graph"></i>Reportes
+        </a>
+      }
+      @if (puede('dashboard')) {
+        <a class="nav-link" routerLink="/admin/chat" routerLinkActive="active"><i class="bi bi-chat-dots"></i>Chat en vivo</a>
+      }
       @if (puede('ingresos')) {
         <a class="nav-link" routerLink="/admin/ingresos" routerLinkActive="active">
           <i class="bi bi-qr-code-scan"></i>Ingresos QR

@@ -1,0 +1,3 @@
+/* reportes.css — ajustes propios de la página de reportes.
+   El resto de la estética proviene de Bootstrap 5 y los estilos globales. */
+.card-header .form-select { min-width: 8rem; }

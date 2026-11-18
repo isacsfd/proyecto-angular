@@ -1,0 +1,84 @@
+<section class="container-fluid py-4">
+  <header class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="h4 mb-1"><i class="bi bi-chat-dots text-iub me-1"></i>Chat institucional en vivo</h1>
+      <p class="text-muted mb-0 small">
+        Comunicación en tiempo real (WebSocket): cada mensaje se distribuye al instante a todos los usuarios conectados.
+      </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge" [class.text-bg-success]="connected()" [class.text-bg-secondary]="!connected()">
+        {{ connected() ? 'Conectado' : 'Desconectado' }}
+      </span>
+      <span class="badge text-bg-light border">{{ users().length }} en línea</span>
+    </div>
+  </header>
+
+  @if (estado()) {
+    <div class="alert alert-warning py-2 d-flex justify-content-between align-items-center" role="alert">
+      <span>{{ estado() }}</span>
+      @if (!connected() && intentosAgotados()) {
+        <button type="button" class="btn btn-sm btn-outline-primary" (click)="reintentar()">Reintentar</button>
+      }
+    </div>
+  }
+
+  <div class="row g-3">
+    <!-- Usuarios conectados (presencia) -->
+    <aside class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white fw-semibold">
+          <i class="bi bi-people me-1"></i>Conectados ({{ users().length }})
+        </div>
+        <ul class="list-group list-group-flush">
+          @for (usuario of users(); track usuario.id) {
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span><span class="punto-conectado me-2" aria-hidden="true"></span>{{ usuario.name }}</span>
+              @if (esUsuarioActual(usuario.id)) {
+                <span class="badge text-bg-primary">Tú</span>
+              }
+            </li>
+          }
+          @if (!users().length) {
+            <li class="list-group-item text-muted small">Nadie más conectado todavía.</li>
+          }
+        </ul>
+        <div class="card-footer bg-white small text-muted">
+          La lista se actualiza al conectar o desconectar cada usuario.
+        </div>
+      </div>
+    </aside>
+
+    <!-- Conversación -->
+    <div class="col-md-9">
+      <div class="card border-0 shadow-sm chat-card d-flex flex-column">
+        <div class="card-header bg-white fw-semibold"><i class="bi bi-chat-left-text me-1"></i>Conversación</div>
+        <div class="chat-messages" aria-live="polite">
+          @for (item of messages(); track $index) {
+            <article class="message" [class.propio]="esPropio(item)">
+              <div class="d-flex justify-content-between gap-3">
+                <strong class="small">{{ esPropio(item) ? 'Tú' : item.name }}</strong>
+                <small class="text-muted">{{ item.sent_at | date:'shortTime' }}</small>
+              </div>
+              <div class="mt-1">{{ item.message }}</div>
+            </article>
+          }
+          @if (!messages().length) {
+            <p class="text-muted text-center my-5">
+              Aún no hay mensajes. Escribe para iniciar la conversación con los usuarios conectados.
+            </p>
+          }
+        </div>
+        <form class="card-footer bg-white d-flex gap-2" (ngSubmit)="enviar()">
+          <input
+            class="form-control" name="message" [ngModel]="draft()" (ngModelChange)="draft.set($event)"
+            maxlength="1000" placeholder="Escribe un mensaje…" [disabled]="!connected()" autocomplete="off"
+          >
+          <button class="btn btn-iub text-white" type="submit" [disabled]="!connected() || !draft().trim()">
+            <i class="bi bi-send"></i> Enviar
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>

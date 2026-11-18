@@ -2,23 +2,227 @@ import { Injectable } from '@angular/core';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { Acceso, Dispositivo, Libro, Prestamo, PrestamoDispositivo, Usuario } from '../models';
+import { Acceso, Dispositivo, Libro, Prestamo, PrestamoDispositivo, TipoReporte, Usuario } from '../models';
 
 export type FormatoReporte = 'pdf' | 'excel';
+/** Formato del archivo para el envío por correo (backend). */
+export type FormatoArchivo = 'pdf' | 'xlsx';
+
+/** Datos de los reportes consolidados disponibles en la plataforma. */
+export interface DatosReportes {
+  libros?: Libro[];
+  usuarios?: Usuario[];
+  prestamos?: Prestamo[];
+  dispositivos?: Dispositivo[];
+  prestamosDispositivos?: PrestamoDispositivo[];
+  ingresos?: Acceso[];
+}
+
+/** Definición lista para exportar: filas mapeadas + columnas + metadatos. */
+export interface DefinicionReporte {
+  datos: Record<string, unknown>[];
+  columnas: string[];
+  titulo: string;
+  nombreArchivo: string;
+}
+
+const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 /**
  * ReportesService — Exporta datos a PDF (jsPDF + autotable) y Excel (SheetJS)
- * con el encabezado institucional de la Biblioteca IUB. Portado del frontend
- * estático (js/reportes.js) al Angular.
+ * con el encabezado institucional de la Biblioteca IUB. Además de la descarga
+ * local, genera Blobs (parcial 2) para enviar el mismo archivo al correo
+ * registrado a través del backend.
  */
 @Injectable({ providedIn: 'root' })
 export class ReportesService {
-  exportarPDF(datos: any[], columnas: string[], titulo: string, nombreArchivo: string): void {
-    if (!datos || datos.length === 0) {
+  // ─── Descarga local (usa la definición del reporte) ───────────────────────
+
+  exportarPDF(datos: Record<string, unknown>[], columnas: string[], titulo: string, nombreArchivo: string): void {
+    const def: DefinicionReporte = { datos, columnas, titulo, nombreArchivo };
+    if (!def.datos.length) {
       alert('No hay datos para exportar.');
       return;
     }
+    this._construirPDF(def).save(`${def.nombreArchivo}_${new Date().toISOString().split('T')[0]}.pdf`);
+  }
 
+  exportarExcel(datos: Record<string, unknown>[], columnas: string[], titulo: string, nombreArchivo: string): void {
+    const def: DefinicionReporte = { datos, columnas, titulo, nombreArchivo };
+    if (!def.datos.length) {
+      alert('No hay datos para exportar.');
+      return;
+    }
+    const libro = this._construirExcel(def);
+    XLSX.writeFile(libro, `${def.nombreArchivo}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }
+
+  /** Descarga la definición en el formato pedido (pdf | excel). */
+  descargar(def: DefinicionReporte, formato: FormatoReporte): void {
+    if (formato === 'pdf') this.exportarPDF(def.datos, def.columnas, def.titulo, def.nombreArchivo);
+    else this.exportarExcel(def.datos, def.columnas, def.titulo, def.nombreArchivo);
+  }
+
+  // ─── Blob para envío por correo (parcial 2) ───────────────────────────────
+
+  /** Genera el archivo en memoria; null si no hay filas que reportar. */
+  blob(def: DefinicionReporte, formato: FormatoArchivo): Blob | null {
+    if (!def.datos.length) return null;
+    if (formato === 'pdf') return this._construirPDF(def).output('blob');
+    const salida = XLSX.write(this._construirExcel(def), { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;
+    return new Blob([salida], { type: MIME_XLSX });
+  }
+
+  // ─── Definiciones por tipo de reporte ────────────────────────────────────
+
+  definicion(tipo: TipoReporte, data: DatosReportes): DefinicionReporte {
+    switch (tipo) {
+      case 'usuarios': return this._defUsuarios(data.usuarios ?? []);
+      case 'prestamos': return this._defPrestamosLibros(data.prestamos ?? []);
+      case 'dispositivos': return this._defDispositivos(data.dispositivos ?? []);
+      case 'ingresos': return this._defIngresos(data.ingresos ?? []);
+      case 'libros':
+      default: return this._defLibros(data.libros ?? []);
+    }
+  }
+
+  private _defLibros(libros: Libro[]): DefinicionReporte {
+    const columnas = ['ID', 'Título', 'Autor', 'Programa', 'Sede', 'Editorial', 'Año', 'Idioma', 'Ejemplares'];
+    return {
+      columnas,
+      titulo: 'Reporte del Catálogo de Libros',
+      nombreArchivo: 'reporte_libros',
+      datos: libros.map((l) => ({
+        ID: l.ID,
+        Titulo: l.Titulo,
+        Autor: l.Autor,
+        Programa: l.Programa ?? '',
+        Sede: l.sede ?? '',
+        Editorial: l.Editorial ?? '',
+        Año: l['Año'] ?? '',
+        Idioma: l.Idioma ?? '',
+        Ejemplares: l.Ejemplar ?? 0,
+      })),
+    };
+  }
+
+  private _defUsuarios(usuarios: Usuario[]): DefinicionReporte {
+    const columnas = ['ID', 'Nombre', 'Identificación', 'Rol', 'Carrera', 'Sede', 'Email'];
+    return {
+      columnas,
+      titulo: 'Reporte de Usuarios',
+      nombreArchivo: 'reporte_usuarios',
+      datos: usuarios.map((u) => ({
+        ID: u.id,
+        Nombre: u.nombre,
+        Identificación: u.identificacion,
+        Rol: u.rol,
+        Carrera: u.carrera ?? '',
+        Sede: u.sede ?? '',
+        Email: u.email ?? '',
+      })),
+    };
+  }
+
+  private _defDispositivos(dispositivos: Dispositivo[]): DefinicionReporte {
+    const columnas = ['ID', 'Tipo', 'Marca', 'Modelo', 'Sede', 'Estado', 'Observaciones'];
+    return {
+      columnas,
+      titulo: 'Reporte de Dispositivos',
+      nombreArchivo: 'reporte_dispositivos',
+      datos: dispositivos.map((d) => ({
+        ID: d.id,
+        Tipo: d.tipo,
+        Marca: d.marca,
+        Modelo: d.modelo,
+        Sede: d.sede,
+        Estado: d.estado,
+        Observaciones: d.observaciones ?? '',
+      })),
+    };
+  }
+
+  private _defPrestamosLibros(prestamos: Prestamo[]): DefinicionReporte {
+    const columnas = ['ID', 'Usuario', 'Libro', 'Préstamo', 'Entrega', 'Estado', 'Solicitud'];
+    return {
+      columnas,
+      titulo: 'Reporte de Préstamos de Libros',
+      nombreArchivo: 'reporte_prestamos_libros',
+      datos: prestamos.map((p) => ({
+        ID: p.id,
+        Usuario: p.user,
+        Libro: p.book,
+        Préstamo: p.loan_date ? new Date(p.loan_date).toLocaleString('es-CO') : 'N/A',
+        Entrega: p.delivery_date ? new Date(p.delivery_date).toLocaleString('es-CO') : 'N/A',
+        Estado: p.state,
+        Solicitud: p.prestamo_state,
+      })),
+    };
+  }
+
+  private _defPrestamosDispositivos(prestamos: PrestamoDispositivo[]): DefinicionReporte {
+    const columnas = ['ID', 'Dispositivo', 'Usuario', 'Inicio', 'Fin', 'Estado'];
+    return {
+      columnas,
+      titulo: 'Reporte de Préstamos de Dispositivos',
+      nombreArchivo: 'reporte_prestamos_dispositivos',
+      datos: prestamos.map((p) => ({
+        ID: p.id,
+        Dispositivo: p.dispositivo,
+        Usuario: p.user,
+        Inicio: p.fecha_prestamo ? new Date(p.fecha_prestamo).toLocaleString('es-CO') : 'N/A',
+        Fin: p.fecha_devolucion ? new Date(p.fecha_devolucion).toLocaleString('es-CO') : 'No devuelto',
+        Estado: p.estado,
+      })),
+    };
+  }
+
+  private _defIngresos(accesos: Acceso[]): DefinicionReporte {
+    const columnas = ['ID', 'Identificación', 'Nombre', 'Fecha y Hora', 'Mensaje', 'Estado'];
+    return {
+      columnas,
+      titulo: 'Reporte de Ingresos a Biblioteca',
+      nombreArchivo: 'reporte_ingresos',
+      datos: accesos.map((a) => ({
+        ID: a.id,
+        Identificación: a.user_identificacion,
+        Nombre: a.user_name,
+        Fecha: a.created_at ? new Date(a.created_at).toLocaleString('es-CO') : 'N/A',
+        Mensaje: a.message,
+        Estado: a.status ? 'Permitido' : 'Denegado',
+      })),
+    };
+  }
+
+  // ─── Exportadores por tipo (compatibles con páginas existentes) ──────────
+
+  exportarLibros(libros: Libro[], formato: FormatoReporte): void {
+    this.descargar(this._defLibros(libros), formato);
+  }
+
+  exportarUsuarios(usuarios: Usuario[], formato: FormatoReporte): void {
+    this.descargar(this._defUsuarios(usuarios), formato);
+  }
+
+  exportarDispositivos(dispositivos: Dispositivo[], formato: FormatoReporte): void {
+    this.descargar(this._defDispositivos(dispositivos), formato);
+  }
+
+  exportarPrestamosLibros(prestamos: Prestamo[], formato: FormatoReporte): void {
+    this.descargar(this._defPrestamosLibros(prestamos), formato);
+  }
+
+  exportarPrestamosDispositivos(prestamos: PrestamoDispositivo[], formato: FormatoReporte): void {
+    this.descargar(this._defPrestamosDispositivos(prestamos), formato);
+  }
+
+  exportarIngresos(accesos: Acceso[], formato: FormatoReporte): void {
+    this.descargar(this._defIngresos(accesos), formato);
+  }
+
+  // ─── Constructores internos ───────────────────────────────────────────────
+
+  private _construirPDF(def: DefinicionReporte): jsPDF {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
     // Encabezado institucional
@@ -36,7 +240,7 @@ export class ReportesService {
     doc.setTextColor(33, 37, 41);
     doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
-    doc.text(titulo, 14, 32);
+    doc.text(def.titulo, 14, 32);
 
     // Fecha de generación
     doc.setFontSize(9);
@@ -51,11 +255,9 @@ export class ReportesService {
     });
     doc.text(`Generado el: ${fechaGeneracion}`, 14, 38);
 
-    const filas = this._extraerFilas(datos, columnas);
-
     autoTable(doc, {
-      head: [columnas],
-      body: filas,
+      head: [def.columnas],
+      body: this._extraerFilas(def.datos, def.columnas),
       startY: 44,
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: [13, 110, 253], textColor: 255, fontStyle: 'bold' },
@@ -72,145 +274,24 @@ export class ReportesService {
       doc.text(`Página ${i} de ${totalPaginas}`, 283, 200, { align: 'right' });
       doc.text('Biblioteca IUB — Documento generado automáticamente', 14, 200);
     }
-
-    const fecha = new Date().toISOString().split('T')[0];
-    doc.save(`${nombreArchivo}_${fecha}.pdf`);
+    return doc;
   }
 
-  exportarExcel(datos: any[], columnas: string[], titulo: string, nombreArchivo: string): void {
-    if (!datos || datos.length === 0) {
-      alert('No hay datos para exportar.');
-      return;
-    }
-
-    const filas = this._extraerFilas(datos, columnas);
-
+  private _construirExcel(def: DefinicionReporte): XLSX.WorkBook {
     const hoja = XLSX.utils.aoa_to_sheet([
-      [`Institución Universitaria de Barranquilla — ${titulo}`],
+      [`Institución Universitaria de Barranquilla — ${def.titulo}`],
       [`Generado el: ${new Date().toLocaleString('es-CO')}`],
       [],
-      columnas,
-      ...filas,
+      def.columnas,
+      ...this._extraerFilas(def.datos, def.columnas),
     ]);
-
-    hoja['!cols'] = columnas.map(() => ({ wch: 22 }));
-
+    hoja['!cols'] = def.columnas.map(() => ({ wch: 22 }));
     const libro = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(libro, hoja, titulo.substring(0, 31));
-
-    const fecha = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(libro, `${nombreArchivo}_${fecha}.xlsx`);
+    XLSX.utils.book_append_sheet(libro, hoja, def.titulo.substring(0, 31));
+    return libro;
   }
 
-  exportarLibros(libros: Libro[], formato: FormatoReporte): void {
-    const columnas = ['ID', 'Título', 'Autor', 'Programa', 'Sede', 'Editorial', 'Año', 'Idioma', 'Ejemplares'];
-    const datos = libros.map((l) => ({
-      ID: l.ID,
-      Titulo: l.Titulo,
-      Autor: l.Autor,
-      Programa: l.Programa ?? '',
-      Sede: l.sede ?? '',
-      Editorial: l.Editorial ?? '',
-      Año: l['Año'] ?? '',
-      Idioma: l.Idioma ?? '',
-      Ejemplares: l.Ejemplar ?? 0,
-    }));
-    if (formato === 'pdf') {
-      this.exportarPDF(datos, columnas, 'Reporte del Catálogo de Libros', 'reporte_libros');
-    } else {
-      this.exportarExcel(datos, columnas, 'Catálogo de Libros', 'reporte_libros');
-    }
-  }
-
-  exportarUsuarios(usuarios: Usuario[], formato: FormatoReporte): void {
-    const columnas = ['ID', 'Nombre', 'Identificación', 'Rol', 'Carrera', 'Sede', 'Email'];
-    const datos = usuarios.map((u) => ({
-      ID: u.id,
-      Nombre: u.nombre,
-      Identificación: u.identificacion,
-      Rol: u.rol,
-      Carrera: u.carrera ?? '',
-      Sede: u.sede ?? '',
-      Email: u.email ?? '',
-    }));
-    if (formato === 'pdf') {
-      this.exportarPDF(datos, columnas, 'Reporte de Usuarios', 'reporte_usuarios');
-    } else {
-      this.exportarExcel(datos, columnas, 'Usuarios', 'reporte_usuarios');
-    }
-  }
-
-  exportarDispositivos(dispositivos: Dispositivo[], formato: FormatoReporte): void {
-    const columnas = ['ID', 'Tipo', 'Marca', 'Modelo', 'Sede', 'Estado', 'Observaciones'];
-    const datos = dispositivos.map((d) => ({
-      ID: d.id,
-      Tipo: d.tipo,
-      Marca: d.marca,
-      Modelo: d.modelo,
-      Sede: d.sede,
-      Estado: d.estado,
-      Observaciones: d.observaciones ?? '',
-    }));
-    if (formato === 'pdf') {
-      this.exportarPDF(datos, columnas, 'Reporte de Dispositivos', 'reporte_dispositivos');
-    } else {
-      this.exportarExcel(datos, columnas, 'Dispositivos', 'reporte_dispositivos');
-    }
-  }
-
-  exportarPrestamosLibros(prestamos: Prestamo[], formato: FormatoReporte): void {
-    const columnas = ['ID', 'Usuario', 'Libro', 'Préstamo', 'Entrega', 'Estado', 'Solicitud'];
-    const datos = prestamos.map((p) => ({
-      ID: p.id,
-      Usuario: p.user,
-      Libro: p.book,
-      Préstamo: p.loan_date ? new Date(p.loan_date).toLocaleString('es-CO') : 'N/A',
-      Entrega: p.delivery_date ? new Date(p.delivery_date).toLocaleString('es-CO') : 'N/A',
-      Estado: p.state,
-      Solicitud: p.prestamo_state,
-    }));
-    if (formato === 'pdf') {
-      this.exportarPDF(datos, columnas, 'Reporte de Préstamos de Libros', 'reporte_prestamos_libros');
-    } else {
-      this.exportarExcel(datos, columnas, 'Préstamos de Libros', 'reporte_prestamos_libros');
-    }
-  }
-
-  exportarPrestamosDispositivos(prestamos: PrestamoDispositivo[], formato: FormatoReporte): void {
-    const columnas = ['ID', 'Dispositivo', 'Usuario', 'Inicio', 'Fin', 'Estado'];
-    const datos = prestamos.map((p) => ({
-      ID: p.id,
-      Dispositivo: p.dispositivo,
-      Usuario: p.user,
-      Inicio: p.fecha_prestamo ? new Date(p.fecha_prestamo).toLocaleString('es-CO') : 'N/A',
-      Fin: p.fecha_devolucion ? new Date(p.fecha_devolucion).toLocaleString('es-CO') : 'No devuelto',
-      Estado: p.estado,
-    }));
-    if (formato === 'pdf') {
-      this.exportarPDF(datos, columnas, 'Reporte de Préstamos de Dispositivos', 'reporte_prestamos_dispositivos');
-    } else {
-      this.exportarExcel(datos, columnas, 'Préstamos de Dispositivos', 'reporte_prestamos_dispositivos');
-    }
-  }
-
-  exportarIngresos(accesos: Acceso[], formato: FormatoReporte): void {
-    const columnas = ['ID', 'Identificación', 'Nombre', 'Fecha y Hora', 'Mensaje', 'Estado'];
-    const datos = accesos.map((a) => ({
-      ID: a.id,
-      Identificación: a.user_identificacion,
-      Nombre: a.user_name,
-      Fecha: a.created_at ? new Date(a.created_at).toLocaleString('es-CO') : 'N/A',
-      Mensaje: a.message,
-      Estado: a.status ? 'Permitido' : 'Denegado',
-    }));
-    if (formato === 'pdf') {
-      this.exportarPDF(datos, columnas, 'Reporte de Ingresos a Biblioteca', 'reporte_ingresos');
-    } else {
-      this.exportarExcel(datos, columnas, 'Ingresos Biblioteca', 'reporte_ingresos');
-    }
-  }
-
-  private _extraerFilas(datos: any[], columnas: string[]): any[][] {
+  private _extraerFilas(datos: Record<string, unknown>[], columnas: string[]): string[][] {
     return datos.map((item) => {
       const valores = Object.values(item);
       return columnas.map((_, i) => {

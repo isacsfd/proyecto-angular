@@ -196,3 +196,68 @@ export interface DashboardIA {
     fecha_solicitud: string;
   }[];
 }
+
+// ─── Chat en tiempo real (WebSocket, parcial 2) ──────────────────────────────
+
+/** Mensaje difundido a todos los conectados por /api/chat/ws. */
+export interface ChatMensajeWS {
+  type: 'message';
+  user_id: number;
+  name: string;
+  message: string;
+  sent_at: string;
+}
+
+/** Lista de usuarios conectados (presencia). */
+export interface ChatPresenciaWS {
+  type: 'presence';
+  users: { id: number; name: string }[];
+}
+
+/** Respuesta del ping de mantenimiento de conexión. */
+export interface ChatPongWS {
+  type: 'pong';
+}
+
+export type ChatEventoWS = ChatMensajeWS | ChatPresenciaWS | ChatPongWS;
+
+// ─── Notificaciones por correo y reportes (parcial 2) ───────────────────────
+
+/** Estados del seguimiento administrativo de envíos de correo. */
+export type EstadoNotificacion = 'pendiente' | 'enviado' | 'fallido' | 'no_configurado' | string;
+
+/** Registro de seguimiento (tabla notificaciones_email). */
+export interface NotificacionEmail {
+  id: number;
+  destinatario_id: number | null;
+  destinatario_email: string;
+  /** reporte_generado | registro_usuario */
+  tipo: string;
+  asunto: string;
+  estado: EstadoNotificacion;
+  detalle: string | null;
+  creado_en: string;
+  enviado_en: string | null;
+}
+
+/** Resultado de enviar un reporte al correo registrado. */
+export interface RespuestaEnvioReporte {
+  id: number;
+  estado: EstadoNotificacion;
+  mensaje: string;
+  destinatario: string;
+}
+
+/** ¿El servidor tiene SMTP configurado (sin exponer secretos)? */
+export interface EstadoSMTP {
+  configurado: boolean;
+}
+
+/** Tipos de reporte consolidado disponibles en la plataforma. */
+export type TipoReporte = 'libros' | 'usuarios' | 'prestamos' | 'dispositivos' | 'ingresos';
+
+/** Dato de una serie para los gráficos del tablero analítico. */
+export interface SerieDato {
+  etiqueta: string;
+  valor: number;
+}
