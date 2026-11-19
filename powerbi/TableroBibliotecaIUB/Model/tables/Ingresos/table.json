@@ -1,0 +1,84 @@
+{
+  "name": "Ingresos",
+  "lineageTag": "257573f6-2fe6-55e8-9d55-1ef312f6a549",
+  "columns": [
+    {
+      "name": "Fecha",
+      "dataType": "dateTime",
+      "sourceColumn": "Fecha",
+      "lineageTag": "f2e83525-9a21-5579-96ae-d2d0e0e9c848",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Estado",
+      "dataType": "string",
+      "sourceColumn": "Estado",
+      "lineageTag": "1538655e-add9-57e6-ac0e-de393fd7fc19",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Sede",
+      "dataType": "string",
+      "sourceColumn": "Sede",
+      "lineageTag": "bf5f3295-d218-5b18-ac97-6f7aea2abe04",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Mes",
+      "dataType": "string",
+      "sourceColumn": "Mes",
+      "lineageTag": "5117415e-d91f-563d-9e33-8c2c564059a2",
+      "summarizeBy": "none",
+      "sortByColumn": "Periodo"
+    },
+    {
+      "name": "Periodo",
+      "dataType": "dateTime",
+      "sourceColumn": "Periodo",
+      "lineageTag": "a9c182e3-a391-5e72-9483-10893aadff69",
+      "summarizeBy": "none",
+      "isHidden": true
+    }
+  ],
+  "partitions": [
+    {
+      "name": "Ingresos-39e97b83-f4a6-54e9-95e6-67de699109c1",
+      "mode": "import",
+      "source": {
+        "type": "m",
+        "expression": [
+          "let",
+          "    Origen = Csv.Document(File.Contents(RutaDatos & \"\\ingresos.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+          "    Encabezados = Table.PromoteHeaders(Origen, [PromoteAllScalars=true]),",
+          "    SinVacios = Table.ReplaceValue(Encabezados, \"\", null, Replacer.ReplaceValue, Table.ColumnNames(Encabezados)),",
+          "    Tipos = Table.TransformColumnTypes(SinVacios, {{\"Fecha\", type datetime}}),",
+          "    ConMes = Table.AddColumn(Tipos, \"Mes\", each DateTime.ToText([Fecha], \"yyyy-MM\"), type text),",
+          "    ConPeriodo = Table.AddColumn(ConMes, \"Periodo\", each #date(Date.Year([Fecha]), Date.Month([Fecha]), 1), type date)",
+          "in",
+          "    ConPeriodo"
+        ]
+      }
+    }
+  ],
+  "measures": [
+    {
+      "name": "Ingresos Registrados",
+      "expression": "COUNTROWS ( Ingresos )",
+      "formatString": "#,0",
+      "lineageTag": "fd76c60e-1e97-5fba-b99e-5e192bd55496",
+      "description": "Accesos a biblioteca registrados (tabla library_access)."
+    },
+    {
+      "name": "Ingresos Permitidos",
+      "expression": "CALCULATE ( COUNTROWS ( Ingresos ), Ingresos[Estado] = \"Permitido\" )",
+      "formatString": "#,0",
+      "lineageTag": "356c4efa-534d-5f1d-bd63-3c86a0ad55c3"
+    },
+    {
+      "name": "% Ingresos Permitidos",
+      "expression": "DIVIDE ( [Ingresos Permitidos], [Ingresos Registrados] )",
+      "formatString": "0.0%",
+      "lineageTag": "c30d439b-f574-5f2c-b20f-2a5219c789ab"
+    }
+  ]
+}

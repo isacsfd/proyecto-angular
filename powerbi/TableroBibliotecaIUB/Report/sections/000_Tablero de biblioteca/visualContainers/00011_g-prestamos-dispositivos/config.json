@@ -1,0 +1,102 @@
+{
+  "name": "85839cbc7ed4530a94c686",
+  "layouts": [
+    {
+      "id": 0,
+      "position": {
+        "x": 432,
+        "y": 452,
+        "z": 12000,
+        "width": 408,
+        "height": 248
+      }
+    }
+  ],
+  "singleVisual": {
+    "visualType": "donutChart",
+    "projections": {
+      "Category": [
+        {
+          "queryRef": "PrestamosDispositivos.Estado"
+        }
+      ],
+      "Y": [
+        {
+          "queryRef": "PrestamosDispositivos.Préstamos de Dispositivos"
+        }
+      ]
+    },
+    "prototypeQuery": {
+      "Version": 2,
+      "From": [
+        {
+          "Name": "t0",
+          "Entity": "PrestamosDispositivos",
+          "Type": 0
+        }
+      ],
+      "Select": [
+        {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Source": "t0"
+              }
+            },
+            "Property": "Estado"
+          },
+          "Name": "PrestamosDispositivos.Estado"
+        },
+        {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Source": "t0"
+              }
+            },
+            "Property": "Préstamos de Dispositivos"
+          },
+          "Name": "PrestamosDispositivos.Préstamos de Dispositivos"
+        }
+      ]
+    },
+    "objects": {},
+    "vcObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Préstamos de equipos por estado'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

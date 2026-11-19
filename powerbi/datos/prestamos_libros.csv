@@ -1,0 +1,9 @@
+ID,LibroID,Libro,FechaPrestamo,FechaEntrega,FechaDevolucion,Estado,Solicitud,Sede
+39,416,Economía y Sociedad: En búsqueda de un ordenamiento Económico-Social eficiente,2026-10-11T09:47:00,2026-10-16T09:47:00,,Activo,No Aprobado,Soledad
+38,953,Memorias de un Abanderado,2026-09-26T11:26:06,2026-10-01T11:26:06,2026-10-01T20:50:29,Devuelto,Aprobado,Soledad
+37,952,El Heroe Discreto,2026-09-26T21:17:00,2026-10-01T21:17:00,,Activo,Aprobado,Soledad
+20,158.1/AR779,N/A,2026-08-13T00:00:00,2026-08-20T00:00:00,2026-09-26T16:12:36,Devuelto,Aprobado,Soledad
+9,303.660986/G982,N/A,2026-08-13T00:00:00,2026-08-20T00:00:00,,Vencido,Aprobado,Soledad
+8,371.36/V812,N/A,2026-08-13T00:00:00,2026-08-20T00:00:00,2026-08-14T00:00:00,Devuelto,Aprobado,Soledad
+2,431,Felicidad y equilibrio de vida. Una aproximación al bienestar personal,2025-04-23T03:37:46,2025-04-30T03:37:46,2025-04-23T03:38:12,Devuelto,Aprobado,Soledad
+1,431,Felicidad y equilibrio de vida. Una aproximación al bienestar personal,2025-04-23T03:08:03,2025-04-30T03:08:03,2025-04-23T03:10:01,Devuelto,Aprobado,Soledad

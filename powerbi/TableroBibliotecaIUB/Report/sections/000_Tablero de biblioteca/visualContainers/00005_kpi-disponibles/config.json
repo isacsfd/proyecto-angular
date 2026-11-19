@@ -1,0 +1,49 @@
+{
+  "name": "3589b8aed6da5ff291ba93",
+  "layouts": [
+    {
+      "id": 0,
+      "position": {
+        "x": 772,
+        "y": 88,
+        "z": 6000,
+        "width": 244,
+        "height": 92
+      }
+    }
+  ],
+  "singleVisual": {
+    "visualType": "card",
+    "projections": {
+      "Values": [
+        {
+          "queryRef": "Dispositivos.Dispositivos Disponibles"
+        }
+      ]
+    },
+    "prototypeQuery": {
+      "Version": 2,
+      "From": [
+        {
+          "Name": "t0",
+          "Entity": "Dispositivos",
+          "Type": 0
+        }
+      ],
+      "Select": [
+        {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Source": "t0"
+              }
+            },
+            "Property": "Dispositivos Disponibles"
+          },
+          "Name": "Dispositivos.Dispositivos Disponibles"
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

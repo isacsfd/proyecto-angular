@@ -1,0 +1,102 @@
+{
+  "name": "92819619b7155219ae65ae",
+  "layouts": [
+    {
+      "id": 0,
+      "position": {
+        "x": 432,
+        "y": 192,
+        "z": 9000,
+        "width": 408,
+        "height": 240
+      }
+    }
+  ],
+  "singleVisual": {
+    "visualType": "lineChart",
+    "projections": {
+      "Category": [
+        {
+          "queryRef": "Ingresos.Mes"
+        }
+      ],
+      "Y": [
+        {
+          "queryRef": "Ingresos.Ingresos Registrados"
+        }
+      ]
+    },
+    "prototypeQuery": {
+      "Version": 2,
+      "From": [
+        {
+          "Name": "t0",
+          "Entity": "Ingresos",
+          "Type": 0
+        }
+      ],
+      "Select": [
+        {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Source": "t0"
+              }
+            },
+            "Property": "Mes"
+          },
+          "Name": "Ingresos.Mes"
+        },
+        {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Source": "t0"
+              }
+            },
+            "Property": "Ingresos Registrados"
+          },
+          "Name": "Ingresos.Ingresos Registrados"
+        }
+      ]
+    },
+    "objects": {},
+    "vcObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Ingresos por mes'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

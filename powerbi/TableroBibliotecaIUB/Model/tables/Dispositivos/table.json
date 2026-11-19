@@ -1,0 +1,94 @@
+{
+  "name": "Dispositivos",
+  "lineageTag": "f1a5c020-88dd-5e46-b059-025eb3acd8b5",
+  "columns": [
+    {
+      "name": "ID",
+      "dataType": "int64",
+      "sourceColumn": "ID",
+      "lineageTag": "78885e89-24e6-5b52-9302-61cd49c3295e",
+      "summarizeBy": "sum"
+    },
+    {
+      "name": "Tipo",
+      "dataType": "string",
+      "sourceColumn": "Tipo",
+      "lineageTag": "64186755-8a9d-5a20-ab51-dee517d3624b",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Marca",
+      "dataType": "string",
+      "sourceColumn": "Marca",
+      "lineageTag": "35f17359-f738-5d1e-b9fc-3d684fec0272",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Modelo",
+      "dataType": "string",
+      "sourceColumn": "Modelo",
+      "lineageTag": "1e4b89f2-463b-5311-8494-6c17e7e2de6e",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Sede",
+      "dataType": "string",
+      "sourceColumn": "Sede",
+      "lineageTag": "bf5f3295-d218-5b18-ac97-6f7aea2abe04",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Estado",
+      "dataType": "string",
+      "sourceColumn": "Estado",
+      "lineageTag": "1538655e-add9-57e6-ac0e-de393fd7fc19",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Alta",
+      "dataType": "dateTime",
+      "sourceColumn": "Alta",
+      "lineageTag": "9c6dab02-4057-5bfe-9ffc-5a7bfede0547",
+      "summarizeBy": "none"
+    }
+  ],
+  "partitions": [
+    {
+      "name": "Dispositivos-901f5fd1-90a6-52d1-9e28-420ed182d25d",
+      "mode": "import",
+      "source": {
+        "type": "m",
+        "expression": [
+          "let",
+          "    Origen = Csv.Document(File.Contents(RutaDatos & \"\\dispositivos.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+          "    Encabezados = Table.PromoteHeaders(Origen, [PromoteAllScalars=true]),",
+          "    SinVacios = Table.ReplaceValue(Encabezados, \"\", null, Replacer.ReplaceValue, Table.ColumnNames(Encabezados)),",
+          "    Tipos = Table.TransformColumnTypes(SinVacios, {{\"ID\", Int64.Type}, {\"Alta\", type datetime}})",
+          "in",
+          "    Tipos"
+        ]
+      }
+    }
+  ],
+  "measures": [
+    {
+      "name": "Dispositivos Totales",
+      "expression": "COUNTROWS ( Dispositivos )",
+      "formatString": "#,0",
+      "lineageTag": "09b52028-15ba-589d-87d4-00515255923e"
+    },
+    {
+      "name": "Dispositivos Disponibles",
+      "expression": "CALCULATE ( COUNTROWS ( Dispositivos ), Dispositivos[Estado] = \"Disponible\" )",
+      "formatString": "#,0",
+      "lineageTag": "8360bbc5-d15b-5b4d-a040-b2196185d784",
+      "description": "Equipos con estado Disponible."
+    },
+    {
+      "name": "% Disponibilidad",
+      "expression": "DIVIDE ( [Dispositivos Disponibles], [Dispositivos Totales] )",
+      "formatString": "0.0%",
+      "lineageTag": "2b946e01-e71b-5ec1-a623-e8ab75c7b87c"
+    }
+  ]
+}

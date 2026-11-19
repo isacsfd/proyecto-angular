@@ -1,0 +1,96 @@
+{
+  "name": "TableroBibliotecaIUB",
+  "compatibilityLevel": 1550,
+  "model": {
+    "culture": "es-ES",
+    "dataAccessOptions": {
+      "legacyRedirects": true,
+      "returnErrorValuesAsNull": true
+    },
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "sourceQueryCulture": "es-ES",
+    "relationships": [
+      {
+        "name": "4fdd9a5f-3d8a-5768-80d2-0342469bdf4e",
+        "fromTable": "Libros",
+        "fromColumn": "Sede",
+        "toTable": "Sedes",
+        "toColumn": "Sede"
+      },
+      {
+        "name": "391dbea3-5737-590d-bd6b-c4fd6b55ad4e",
+        "fromTable": "Dispositivos",
+        "fromColumn": "Sede",
+        "toTable": "Sedes",
+        "toColumn": "Sede"
+      },
+      {
+        "name": "905f4590-d61e-5ad6-8ad8-d81160db66b8",
+        "fromTable": "PrestamosLibros",
+        "fromColumn": "Sede",
+        "toTable": "Sedes",
+        "toColumn": "Sede"
+      },
+      {
+        "name": "1b3bfc6e-8d79-54b7-88e2-a3ad642950c8",
+        "fromTable": "PrestamosDispositivos",
+        "fromColumn": "Sede",
+        "toTable": "Sedes",
+        "toColumn": "Sede"
+      },
+      {
+        "name": "f58eb5d9-7958-5744-b3e8-232c13825b94",
+        "fromTable": "Ingresos",
+        "fromColumn": "Sede",
+        "toTable": "Sedes",
+        "toColumn": "Sede"
+      },
+      {
+        "name": "dfb68cb2-65aa-5d7c-ac7a-2e08fa96a582",
+        "fromTable": "Usuarios",
+        "fromColumn": "Sede",
+        "toTable": "Sedes",
+        "toColumn": "Sede"
+      }
+    ],
+    "expressions": [
+      {
+        "name": "RutaDatos",
+        "kind": "m",
+        "expression": "\"C:\\\\Users\\\\USUARIO\\\\OneDrive\\\\Documentos\\\\Proyecto-Organizado\\\\powerbi\\\\datos\"",
+        "annotations": [
+          {
+            "name": "PBI_IsParameterQuery",
+            "value": "true"
+          },
+          {
+            "name": "PBI_IsParameterQueryRequired",
+            "value": "true"
+          },
+          {
+            "name": "PBI_QueryGroupName",
+            "value": "Parámetros"
+          },
+          {
+            "name": "PBI_ResultType",
+            "value": "Text"
+          }
+        ]
+      }
+    ],
+    "annotations": [
+      {
+        "name": "__PBI_TimeIntelligenceEnabled",
+        "value": "0"
+      },
+      {
+        "name": "PBIDesktopVersion",
+        "value": "2.159.1231.0 (25.11)"
+      },
+      {
+        "name": "PBI_QueryOrder",
+        "value": "[\"RutaDatos\", \"Libros\", \"Dispositivos\", \"PrestamosLibros\", \"PrestamosDispositivos\", \"Ingresos\", \"Usuarios\", \"Sedes\"]"
+      }
+    ]
+  }
+}

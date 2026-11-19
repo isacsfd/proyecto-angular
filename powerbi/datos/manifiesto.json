@@ -1,0 +1,118 @@
+{
+  "generado_en": "2026-11-19T00:20:51+00:00",
+  "instantanea": {
+    "archivo": "fuente/datos_powerbi.json",
+    "capturada_en": "2026-11-19T00:16:12.073Z",
+    "fuente": "https://biblioteca-iub-api.onrender.com",
+    "sha256": "c28434ef628e79fb27c9d9964ad34cd147cd8a7ac97d7fc6f505d94e8296b2c3"
+  },
+  "privacidad": {
+    "datos_personales_incluidos": false,
+    "excluidos": [
+      "nombre",
+      "identificacion",
+      "email",
+      "phone",
+      "address",
+      "user_id"
+    ],
+    "usuarios": "agregados por sede + rol + carrera + nivel"
+  },
+  "tablas": [
+    {
+      "archivo": "libros.csv",
+      "filas": 693,
+      "columnas": [
+        "ID",
+        "Titulo",
+        "Programa",
+        "Sede",
+        "Idioma",
+        "Editorial",
+        "Anio",
+        "Ejemplar"
+      ],
+      "bytes": 80965,
+      "sha256": "d1c1852cdaf5fe56482e641fab84c7cadce32e7c3bccb658be81fbe582e2ab4e"
+    },
+    {
+      "archivo": "dispositivos.csv",
+      "filas": 18,
+      "columnas": [
+        "ID",
+        "Tipo",
+        "Marca",
+        "Modelo",
+        "Sede",
+        "Estado",
+        "Alta"
+      ],
+      "bytes": 1188,
+      "sha256": "c061df5e1df68014f615096c78f24dc1a96663dcfe512855ea8ae6bbd6362a5e"
+    },
+    {
+      "archivo": "prestamos_libros.csv",
+      "filas": 8,
+      "columnas": [
+        "ID",
+        "LibroID",
+        "Libro",
+        "FechaPrestamo",
+        "FechaEntrega",
+        "FechaDevolucion",
+        "Estado",
+        "Solicitud",
+        "Sede"
+      ],
+      "bytes": 1082,
+      "sha256": "a4f88b5a3d2e451dee30c17baab4aa00491849fc13e51607aced3b46effff486"
+    },
+    {
+      "archivo": "prestamos_dispositivos.csv",
+      "filas": 25,
+      "columnas": [
+        "ID",
+        "Dispositivo",
+        "FechaPrestamo",
+        "FechaDevolucion",
+        "Estado",
+        "Sede"
+      ],
+      "bytes": 2301,
+      "sha256": "204e119756e32a06d51096223b643f7e0eb1327db5b6fb3abaf5da0740b8a351"
+    },
+    {
+      "archivo": "ingresos.csv",
+      "filas": 29,
+      "columnas": [
+        "Fecha",
+        "Estado",
+        "Sede"
+      ],
+      "bytes": 1150,
+      "sha256": "b267f5f7adfe51e93b06a948cb508b7e673121644d7974ea1e97bf16266c84fc"
+    },
+    {
+      "archivo": "usuarios_agregados.csv",
+      "filas": 11,
+      "columnas": [
+        "Sede",
+        "Rol",
+        "Carrera",
+        "Nivel",
+        "Cantidad"
+      ],
+      "bytes": 720,
+      "sha256": "a44f38c807efc472394f108e44bf866afbcb00b149af522c2614660085776306"
+    },
+    {
+      "archivo": "sedes.csv",
+      "filas": 3,
+      "columnas": [
+        "Sede"
+      ],
+      "bytes": 40,
+      "sha256": "c838715e0074204a0eeb0114176e3c4da21b4da490835498af6fc4d89c3531de"
+    }
+  ]
+}

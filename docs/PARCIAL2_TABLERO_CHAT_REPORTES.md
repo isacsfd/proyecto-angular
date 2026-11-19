@@ -2,8 +2,8 @@
 
 Implementación de los tres entregables del **Parcial Corte 2 (Angular)** sobre la
 arquitectura existente (FastAPI + Angular 22 + JWT + RBAC). Este documento
-describe qué se implementó, cómo se valida y qué configuración externa queda
-pendiente.
+describe qué se implementó, cómo se valida y qué configuración externa usa
+(SMTP por Brevo, ya desplegada y verificada).
 
 ---
 
@@ -21,10 +21,13 @@ pendiente.
   `/dispositivos/`, `/api/library-access/`, `/usuarios/`), respetando el
   alcance por rol del backend (no se inventan fuentes).
 - Agregaciones puras y testeadas en `tablero.datos.ts` (vitest).
-- **Nota sobre Power BI:** el repositorio no contiene Power BI. El tablero se
-  implementó dentro de Angular con los datos reales de la API; los mismos
-  endpoints JSON (`/api/ia/dashboard`, listados RBAC) pueden consumirse desde
-  Power BI si el docente lo exige, autenticando con el Bearer JWT.
+- **Nota sobre Power BI:** el repositorio **sí contiene** el entregable de
+  Power BI del parcial: `powerbi/entrega/TableroBibliotecaIUB.pbix`
+  (archivo editable, con los datos reales cargados; se produjo abriendo el
+  `.pbit` compilado con pbi-tools en Power BI Desktop, que cargó las tablas y
+  renderizó el reporte antes de guardar). Incluye 5 indicadores, 6 gráficos y
+  filtro por sede, sobre los mismos endpoints JSON de la API. Guía completa
+  (fuente, modelo, medidas, actualización): `docs/POWERBI_TABLERO.md`.
 
 ## 2. Chat en tiempo real con WebSocket (50%)
 
@@ -86,20 +89,38 @@ pendiente.
 
 ---
 
-## Configuración externa pendiente (SMTP)
+## Configuración externa (SMTP por Brevo)
 
 El envío real de correos exige credenciales SMTP **que no están ni deben estar
-en el repositorio**. Definir en Render (servicio `biblioteca-iub-api`,
-Environment) — ya declaradas en `render.yaml` con `sync: false`:
+en el repositorio ni en esta documentación**. La configuración desplegada usa
+**Brevo** como relay: Render Free bloquea el tráfico saliente a los puertos
+SMTP `25`, `465` y `587`, y Brevo escucha en el **puerto 2525**, que sí está
+permitido. La conexión usa **STARTTLS**.
 
-| Variable | Ejemplo | Nota |
+Definir en Render (servicio `biblioteca-iub-api`, Environment) — ya declaradas
+en `render.yaml` con `sync: false`:
+
+| Variable | Valor / ejemplo | Nota |
 |---|---|---|
-| `MM_SMTP_HOST` | `smtp.gmail.com` | Servidor SMTP. |
-| `MM_SMTP_PORT` | `587` (defecto) | `465` implica SSL. |
-| `MM_SMTP_USER` | `biblioteca@iub.edu.co` | Usuario SMTP. |
-| `MM_SMTP_PASSWORD` | *(contraseña de aplicación)* | Secreto: solo en el panel. |
-| `MM_SMTP_FROM` | `Biblioteca IUB <biblioteca@iub.edu.co>` | Opcional (defecto: usuario). |
-| `MM_SMTP_MODO` | `starttls` (defecto) | `ssl` o `ninguno` como alternativas. |
+| `MM_SMTP_HOST` | `smtp-relay.brevo.com` | Relay SMTP de Brevo. |
+| `MM_SMTP_PORT` | `2525` | Alternativa oficial a 587 (bloqueado en Render Free). |
+| `MM_SMTP_USER` | `<login SMTP de Brevo>` | Se copia de *Settings → SMTP & API* (formato `...@smtp-brevo.com`). No es un secreto, pero se mantiene fuera del repositorio. |
+| `MM_SMTP_PASSWORD` | *(SMTP key de Brevo)* | **Secreto**: solo en el panel de Render. No es la API key ni la contraseña de la cuenta. |
+| `MM_SMTP_FROM` | `Biblioteca IUB <remitente verificado>` | Debe ser un remitente verificado en Brevo. |
+| `MM_SMTP_MODO` | `starttls` | El código también admite `ssl` (puerto 465) y `ninguno`. |
+
+Notas operativas:
+
+- En Brevo, el **bloqueo de IPs desconocidas para SMTP** debe permanecer
+  desactivado: Render Free usa IPs de salida rotativas y, si se activa, el
+  relay responde `525 5.7.1 Unauthorized IP address`.
+- `MM_SMTP_PORT=587` produce `OSError: [Errno 101] Network is unreachable`
+  en Render Free: es una política de la plataforma, no un defecto del código.
+- Verificación: `GET /api/notificaciones/estado-smtp` (con JWT) devuelve
+  `{"configurado": true}`; el panel de seguimiento de `/admin/reportes`
+  muestra cada envío como `enviado`, `fallido` o `no_configurado`.
+- Evidencia de envíos reales: registros **#4 (PDF)** y **#5 (XLSX)** en estado
+  `enviado`, entregados únicamente al correo registrado del usuario.
 
 Sin estas variables el sistema es **honesto**: la interfaz muestra "SMTP no
 configurado" (vía `/api/notificaciones/estado-smtp`) y cada intento queda
@@ -112,7 +133,7 @@ falla el flujo principal ni se simula un envío inexistente.
 |---|---|
 | Backend pytest (chat WS) | `tests/test_chat_ws.py` — **7/7** (auth 4401, dos clientes sincronizados, presencia, multi-pestaña, ping/pong, mensajes vacíos/largos). |
 | Backend pytest (notificaciones) | `tests/test_notificaciones_email.py` — **13/13** (registro de usuario, adjunto con bytes exactos, falla SMTP registrada, validaciones 400/413, listado admin 403/200, filtros, config SMTP). |
-| Backend pytest (suite completa) | Ver el informe de la sesión: 278 pruebas (incluido Telegram tras instalar `python-telegram-bot==21.11.1`, ya declarado en `requirements.txt`, en el venv local). |
+| Backend pytest (suite completa) | **280 pasan** (incluye los 5 de Telegram tras instalar `python-telegram-bot==21.11.1`, ya declarado en `requirements.txt`, en el venv local). |
 | Angular vitest | **20 archivos / 113 pruebas** (91 previas + 22 nuevas: URL del chat, agregaciones del tablero, geometría de gráficos). |
 | Build Angular producción | `ng build` sin errores. |
 

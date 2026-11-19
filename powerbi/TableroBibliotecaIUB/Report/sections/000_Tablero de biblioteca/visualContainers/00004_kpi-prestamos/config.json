@@ -1,0 +1,49 @@
+{
+  "name": "35e3aabb2417594fb23125",
+  "layouts": [
+    {
+      "id": 0,
+      "position": {
+        "x": 520,
+        "y": 88,
+        "z": 5000,
+        "width": 244,
+        "height": 92
+      }
+    }
+  ],
+  "singleVisual": {
+    "visualType": "card",
+    "projections": {
+      "Values": [
+        {
+          "queryRef": "PrestamosLibros.Préstamos de Libros"
+        }
+      ]
+    },
+    "prototypeQuery": {
+      "Version": 2,
+      "From": [
+        {
+          "Name": "t0",
+          "Entity": "PrestamosLibros",
+          "Type": 0
+        }
+      ],
+      "Select": [
+        {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Source": "t0"
+              }
+            },
+            "Property": "Préstamos de Libros"
+          },
+          "Name": "PrestamosLibros.Préstamos de Libros"
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

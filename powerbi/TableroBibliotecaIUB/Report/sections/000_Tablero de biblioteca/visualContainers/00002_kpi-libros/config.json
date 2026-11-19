@@ -1,0 +1,49 @@
+{
+  "name": "6643bd23a2085d9cb7ca29",
+  "layouts": [
+    {
+      "id": 0,
+      "position": {
+        "x": 16,
+        "y": 88,
+        "z": 3000,
+        "width": 244,
+        "height": 92
+      }
+    }
+  ],
+  "singleVisual": {
+    "visualType": "card",
+    "projections": {
+      "Values": [
+        {
+          "queryRef": "Libros.Total Libros"
+        }
+      ]
+    },
+    "prototypeQuery": {
+      "Version": 2,
+      "From": [
+        {
+          "Name": "t0",
+          "Entity": "Libros",
+          "Type": 0
+        }
+      ],
+      "Select": [
+        {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Source": "t0"
+              }
+            },
+            "Property": "Total Libros"
+          },
+          "Name": "Libros.Total Libros"
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

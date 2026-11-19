@@ -1,0 +1,68 @@
+{
+  "name": "Usuarios",
+  "lineageTag": "6f07673c-4b60-5e13-8a93-dacb21595eea",
+  "columns": [
+    {
+      "name": "Sede",
+      "dataType": "string",
+      "sourceColumn": "Sede",
+      "lineageTag": "bf5f3295-d218-5b18-ac97-6f7aea2abe04",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Rol",
+      "dataType": "string",
+      "sourceColumn": "Rol",
+      "lineageTag": "706c36bb-e647-5316-99d1-9c8f97536e8c",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Carrera",
+      "dataType": "string",
+      "sourceColumn": "Carrera",
+      "lineageTag": "69737b6d-460a-550e-b821-263e1b9904aa",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Nivel",
+      "dataType": "string",
+      "sourceColumn": "Nivel",
+      "lineageTag": "4f678c2e-d2a2-5b8f-bcba-db24eb01204b",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Cantidad",
+      "dataType": "int64",
+      "sourceColumn": "Cantidad",
+      "lineageTag": "5669b6f4-97cf-59cd-9129-8d3a9b6be4dd",
+      "summarizeBy": "sum"
+    }
+  ],
+  "partitions": [
+    {
+      "name": "Usuarios-f59e8300-5192-5ded-88e9-8c0fffc5f0a2",
+      "mode": "import",
+      "source": {
+        "type": "m",
+        "expression": [
+          "let",
+          "    Origen = Csv.Document(File.Contents(RutaDatos & \"\\usuarios_agregados.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+          "    Encabezados = Table.PromoteHeaders(Origen, [PromoteAllScalars=true]),",
+          "    SinVacios = Table.ReplaceValue(Encabezados, \"\", null, Replacer.ReplaceValue, Table.ColumnNames(Encabezados)),",
+          "    Tipos = Table.TransformColumnTypes(SinVacios, {{\"Cantidad\", Int64.Type}})",
+          "in",
+          "    Tipos"
+        ]
+      }
+    }
+  ],
+  "measures": [
+    {
+      "name": "Usuarios Registrados",
+      "expression": "SUM ( Usuarios[Cantidad] )",
+      "formatString": "#,0",
+      "lineageTag": "838a3ea4-16fa-5919-b5b0-027757c7ab19",
+      "description": "Conteo agregado: no se cargan datos personales."
+    }
+  ]
+}

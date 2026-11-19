@@ -1,0 +1,107 @@
+{
+  "name": "a5d94aa1f1515247abc060",
+  "layouts": [
+    {
+      "id": 0,
+      "position": {
+        "x": 848,
+        "y": 192,
+        "z": 10000,
+        "width": 408,
+        "height": 240
+      }
+    }
+  ],
+  "singleVisual": {
+    "visualType": "clusteredColumnChart",
+    "projections": {
+      "Category": [
+        {
+          "queryRef": "Sedes.Sede"
+        }
+      ],
+      "Y": [
+        {
+          "queryRef": "Dispositivos.Dispositivos Totales"
+        }
+      ]
+    },
+    "prototypeQuery": {
+      "Version": 2,
+      "From": [
+        {
+          "Name": "t0",
+          "Entity": "Sedes",
+          "Type": 0
+        },
+        {
+          "Name": "t1",
+          "Entity": "Dispositivos",
+          "Type": 0
+        }
+      ],
+      "Select": [
+        {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Source": "t0"
+              }
+            },
+            "Property": "Sede"
+          },
+          "Name": "Sedes.Sede"
+        },
+        {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Source": "t1"
+              }
+            },
+            "Property": "Dispositivos Totales"
+          },
+          "Name": "Dispositivos.Dispositivos Totales"
+        }
+      ]
+    },
+    "objects": {},
+    "vcObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Dispositivos por sede'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

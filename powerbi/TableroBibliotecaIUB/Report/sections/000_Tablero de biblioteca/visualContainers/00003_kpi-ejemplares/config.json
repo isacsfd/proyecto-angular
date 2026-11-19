@@ -1,0 +1,49 @@
+{
+  "name": "32a33162b27a57d09d8769",
+  "layouts": [
+    {
+      "id": 0,
+      "position": {
+        "x": 268,
+        "y": 88,
+        "z": 4000,
+        "width": 244,
+        "height": 92
+      }
+    }
+  ],
+  "singleVisual": {
+    "visualType": "card",
+    "projections": {
+      "Values": [
+        {
+          "queryRef": "Libros.Total Ejemplares"
+        }
+      ]
+    },
+    "prototypeQuery": {
+      "Version": 2,
+      "From": [
+        {
+          "Name": "t0",
+          "Entity": "Libros",
+          "Type": 0
+        }
+      ],
+      "Select": [
+        {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Source": "t0"
+              }
+            },
+            "Property": "Total Ejemplares"
+          },
+          "Name": "Libros.Total Ejemplares"
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

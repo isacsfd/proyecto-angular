@@ -1,0 +1,103 @@
+{
+  "name": "Libros",
+  "lineageTag": "cc41545d-af36-57ff-afb1-e781151fef88",
+  "columns": [
+    {
+      "name": "ID",
+      "dataType": "int64",
+      "sourceColumn": "ID",
+      "lineageTag": "78885e89-24e6-5b52-9302-61cd49c3295e",
+      "summarizeBy": "sum"
+    },
+    {
+      "name": "Titulo",
+      "dataType": "string",
+      "sourceColumn": "Titulo",
+      "lineageTag": "61a854da-587c-5865-be5f-83e073f92fe5",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Programa",
+      "dataType": "string",
+      "sourceColumn": "Programa",
+      "lineageTag": "00ca9d55-3158-54b6-a479-16a06a84b341",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Sede",
+      "dataType": "string",
+      "sourceColumn": "Sede",
+      "lineageTag": "bf5f3295-d218-5b18-ac97-6f7aea2abe04",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Idioma",
+      "dataType": "string",
+      "sourceColumn": "Idioma",
+      "lineageTag": "9df94ef4-9b51-559b-8783-c164e70c3972",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Editorial",
+      "dataType": "string",
+      "sourceColumn": "Editorial",
+      "lineageTag": "e8ae2085-707b-5c6c-b801-a9d2ca074231",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Anio",
+      "dataType": "int64",
+      "sourceColumn": "Anio",
+      "lineageTag": "15e2210d-dcfd-55b7-9efd-e3ce53d7c15b",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Ejemplar",
+      "dataType": "int64",
+      "sourceColumn": "Ejemplar",
+      "lineageTag": "0ea8c67a-3f77-5a59-a002-c71980d5ace3",
+      "summarizeBy": "sum"
+    }
+  ],
+  "partitions": [
+    {
+      "name": "Libros-f26de01a-2abb-5b00-b563-cb6418d6c956",
+      "mode": "import",
+      "source": {
+        "type": "m",
+        "expression": [
+          "let",
+          "    Origen = Csv.Document(File.Contents(RutaDatos & \"\\libros.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+          "    Encabezados = Table.PromoteHeaders(Origen, [PromoteAllScalars=true]),",
+          "    SinVacios = Table.ReplaceValue(Encabezados, \"\", null, Replacer.ReplaceValue, Table.ColumnNames(Encabezados)),",
+          "    Tipos = Table.TransformColumnTypes(SinVacios, {{\"ID\", Int64.Type}, {\"Ejemplar\", Int64.Type}, {\"Anio\", Int64.Type}})",
+          "in",
+          "    Tipos"
+        ]
+      }
+    }
+  ],
+  "measures": [
+    {
+      "name": "Total Libros",
+      "expression": "COUNTROWS ( Libros )",
+      "formatString": "#,0",
+      "lineageTag": "4821f636-ef60-56c2-a849-adcfae8fd7c0",
+      "description": "Filas del catálogo (una por registro de libro)."
+    },
+    {
+      "name": "Total Ejemplares",
+      "expression": "SUM ( Libros[Ejemplar] )",
+      "formatString": "#,0",
+      "lineageTag": "6f87cb95-4f0a-5838-ac32-b0385e05f448",
+      "description": "Suma de la columna Ejemplar."
+    },
+    {
+      "name": "Programas con Acervo",
+      "expression": "CALCULATE ( DISTINCTCOUNT ( Libros[Programa] ), Libros[Programa] <> BLANK () )",
+      "formatString": "#,0",
+      "lineageTag": "a904ada4-ddcd-5e16-8953-fd5b0209a666",
+      "description": "Programas distintos con al menos un libro registrado."
+    }
+  ]
+}

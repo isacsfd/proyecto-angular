@@ -1,0 +1,26 @@
+ID,Dispositivo,FechaPrestamo,FechaDevolucion,Estado,Sede
+58,Tablet Samsung Tab A9,2026-09-26T13:15:00,2026-09-26T14:16:00,Activo,Soledad
+57,Tablet Samsung Tab A9,2026-09-26T19:00:00,2026-10-01T20:51:57,Completado,Soledad
+54,N/A,2026-09-21T22:55:19,2026-09-26T16:14:47,Completado,Soledad
+47,Tablet Samsung Galaxy Tab S6,2026-08-14T08:58:01,2026-09-26T16:14:52,Completado,Soledad
+42,Computador HP EliteDesk 802,2026-08-13T18:35:01,2026-08-14T04:50:18,Completado,Soledad
+37,Computador Dell OptiPlex 7002,2026-08-13T13:43:10,2026-08-13T13:46:50,Completado,Soledad
+36,Computador Dell OptiPlex 7003,2026-08-13T13:42:12,2026-08-14T04:50:13,Completado,Soledad
+29,Tablet Samsung Galaxy Tab S6,2026-08-13T13:26:43,2026-08-13T13:46:50,Completado,Soledad
+17,Tablet Samsung Galaxy Tab S8,2026-01-23T16:29:29,2026-01-23T16:35:55,Completado,Soledad
+16,Computador HP EliteDesk 803,2025-08-29T14:38:02,2025-08-29T14:38:54,Dañado,Soledad
+15,Tablet Samsung Galaxy Tab S8,2025-08-29T12:37:59,2025-08-29T14:38:39,Completado,Soledad
+14,Tablet Samsung Galaxy Tab S6,2025-08-29T12:36:57,2025-08-29T12:37:18,Completado,Soledad
+13,Tablet Samsung Galaxy Tab S6,2025-08-26T00:25:18,2025-08-26T00:25:30,Completado,Soledad
+12,Tablet Samsung Galaxy Tab S8,2025-08-26T00:22:56,2025-08-26T00:23:17,Completado,Soledad
+11,Tablet Samsung Galaxy Tab S6,2025-08-26T00:19:30,2025-08-26T00:20:05,Completado,Soledad
+10,Tablet Samsung Galaxy Tab S6,2025-08-25T21:07:08,2025-08-26T00:06:24,Completado,Soledad
+9,Tablet Samsung Galaxy Tab S7,2025-07-24T03:54:35,2025-07-24T03:55:04,Completado,Soledad
+8,Tablet Samsung Galaxy Tab S9,2025-07-24T03:52:53,2025-07-24T03:53:55,Completado,Soledad
+7,Tablet Samsung Galaxy Tab S6,2025-07-24T03:17:19,2025-07-24T03:17:31,Completado,Soledad
+6,Tablet Samsung Galaxy Tab S9,2025-07-24T03:15:23,2025-07-24T03:17:12,Completado,Soledad
+5,Computador HP EliteDesk 804,2025-07-24T03:13:37,2025-07-24T03:13:49,Completado,Soledad
+4,Tablet Samsung Galaxy Tab S9,2025-07-24T03:01:21,2025-07-24T03:13:19,Completado,Soledad
+3,Tablet Samsung Galaxy Tab S7,2025-07-24T03:00:30,2025-07-24T03:13:12,Completado,Soledad
+2,Computador Dell OptiPlex 7001,2025-07-24T00:22:00,2025-07-24T00:23:20,Dañado,Soledad
+1,Computador Dell OptiPlex 7001,2025-07-24T00:17:57,2025-07-24T00:19:15,Completado,Soledad

@@ -1,0 +1,114 @@
+{
+  "name": "PrestamosLibros",
+  "lineageTag": "4ba61986-b64c-5810-87d0-41c74447786f",
+  "columns": [
+    {
+      "name": "ID",
+      "dataType": "int64",
+      "sourceColumn": "ID",
+      "lineageTag": "78885e89-24e6-5b52-9302-61cd49c3295e",
+      "summarizeBy": "sum"
+    },
+    {
+      "name": "LibroID",
+      "dataType": "string",
+      "sourceColumn": "LibroID",
+      "lineageTag": "dad770c5-12d8-5361-a305-55e319363bb0",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Libro",
+      "dataType": "string",
+      "sourceColumn": "Libro",
+      "lineageTag": "83c90158-01b7-5613-bb9b-858fa57652e5",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "FechaPrestamo",
+      "dataType": "dateTime",
+      "sourceColumn": "FechaPrestamo",
+      "lineageTag": "ac568a50-8a36-5fe2-bcf4-a1d81ef04908",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "FechaEntrega",
+      "dataType": "dateTime",
+      "sourceColumn": "FechaEntrega",
+      "lineageTag": "6e808d8c-f976-54ad-b5aa-76b01d5086bd",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "FechaDevolucion",
+      "dataType": "dateTime",
+      "sourceColumn": "FechaDevolucion",
+      "lineageTag": "bc74a7a2-3ea4-5e61-a8fd-9c3c50b814c3",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Estado",
+      "dataType": "string",
+      "sourceColumn": "Estado",
+      "lineageTag": "1538655e-add9-57e6-ac0e-de393fd7fc19",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Solicitud",
+      "dataType": "string",
+      "sourceColumn": "Solicitud",
+      "lineageTag": "19509647-2c47-505f-9ef2-ee3b1644f0c0",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Sede",
+      "dataType": "string",
+      "sourceColumn": "Sede",
+      "lineageTag": "bf5f3295-d218-5b18-ac97-6f7aea2abe04",
+      "summarizeBy": "none"
+    }
+  ],
+  "partitions": [
+    {
+      "name": "PrestamosLibros-9c792403-5076-5e28-8813-91ccba5318ff",
+      "mode": "import",
+      "source": {
+        "type": "m",
+        "expression": [
+          "let",
+          "    Origen = Csv.Document(File.Contents(RutaDatos & \"\\prestamos_libros.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+          "    Encabezados = Table.PromoteHeaders(Origen, [PromoteAllScalars=true]),",
+          "    SinVacios = Table.ReplaceValue(Encabezados, \"\", null, Replacer.ReplaceValue, Table.ColumnNames(Encabezados)),",
+          "    Tipos = Table.TransformColumnTypes(SinVacios, {{\"ID\", Int64.Type}, {\"FechaPrestamo\", type datetime}, {\"FechaEntrega\", type datetime}, {\"FechaDevolucion\", type datetime}})",
+          "in",
+          "    Tipos"
+        ]
+      }
+    }
+  ],
+  "measures": [
+    {
+      "name": "Préstamos de Libros",
+      "expression": "COUNTROWS ( PrestamosLibros )",
+      "formatString": "#,0",
+      "lineageTag": "75266954-9d95-5c88-86e6-1ee397ba6f31"
+    },
+    {
+      "name": "Préstamos Activos",
+      "expression": "CALCULATE ( COUNTROWS ( PrestamosLibros ), PrestamosLibros[Estado] = \"Activo\" )",
+      "formatString": "#,0",
+      "lineageTag": "9d8f9ecb-1594-55b3-b5ef-5de244d28a73"
+    },
+    {
+      "name": "Préstamos Vencidos",
+      "expression": "CALCULATE ( COUNTROWS ( PrestamosLibros ), PrestamosLibros[Estado] = \"Vencido\" )",
+      "formatString": "#,0",
+      "lineageTag": "14756280-76fb-5d8a-a91a-61ddcb31849f"
+    },
+    {
+      "name": "Tasa de Aprobación",
+      "expression": "DIVIDE ( CALCULATE ( COUNTROWS ( PrestamosLibros ), PrestamosLibros[Solicitud] = \"Aprobado\" ), [Préstamos de Libros] )",
+      "formatString": "0.0%",
+      "lineageTag": "c98ca1b2-51b7-5253-89c1-a304f7910b1a",
+      "description": "Solicitudes de préstamo aprobadas sobre el total registrado."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": 0,
+  "layoutOptimization": 0,
+  "pods": [
+    {
+      "boundSection": "ReportSection9b9a1bd709e9",
+      "config": "{}",
+      "name": "PodTablero"
+    }
+  ],
+  "resourcePackages": []
+}

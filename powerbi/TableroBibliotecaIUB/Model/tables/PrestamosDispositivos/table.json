@@ -1,0 +1,80 @@
+{
+  "name": "PrestamosDispositivos",
+  "lineageTag": "2c894a93-da85-5326-9a84-c82caea392e9",
+  "columns": [
+    {
+      "name": "ID",
+      "dataType": "int64",
+      "sourceColumn": "ID",
+      "lineageTag": "78885e89-24e6-5b52-9302-61cd49c3295e",
+      "summarizeBy": "sum"
+    },
+    {
+      "name": "Dispositivo",
+      "dataType": "string",
+      "sourceColumn": "Dispositivo",
+      "lineageTag": "b6f7b05c-94cc-52aa-99c2-5d4967dbf49d",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "FechaPrestamo",
+      "dataType": "dateTime",
+      "sourceColumn": "FechaPrestamo",
+      "lineageTag": "ac568a50-8a36-5fe2-bcf4-a1d81ef04908",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "FechaDevolucion",
+      "dataType": "dateTime",
+      "sourceColumn": "FechaDevolucion",
+      "lineageTag": "bc74a7a2-3ea4-5e61-a8fd-9c3c50b814c3",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Estado",
+      "dataType": "string",
+      "sourceColumn": "Estado",
+      "lineageTag": "1538655e-add9-57e6-ac0e-de393fd7fc19",
+      "summarizeBy": "none"
+    },
+    {
+      "name": "Sede",
+      "dataType": "string",
+      "sourceColumn": "Sede",
+      "lineageTag": "bf5f3295-d218-5b18-ac97-6f7aea2abe04",
+      "summarizeBy": "none"
+    }
+  ],
+  "partitions": [
+    {
+      "name": "PrestamosDispositivos-63986d62-c2a2-5e4e-a0e3-94f337db0a37",
+      "mode": "import",
+      "source": {
+        "type": "m",
+        "expression": [
+          "let",
+          "    Origen = Csv.Document(File.Contents(RutaDatos & \"\\prestamos_dispositivos.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+          "    Encabezados = Table.PromoteHeaders(Origen, [PromoteAllScalars=true]),",
+          "    SinVacios = Table.ReplaceValue(Encabezados, \"\", null, Replacer.ReplaceValue, Table.ColumnNames(Encabezados)),",
+          "    Tipos = Table.TransformColumnTypes(SinVacios, {{\"ID\", Int64.Type}, {\"FechaPrestamo\", type datetime}, {\"FechaDevolucion\", type datetime}})",
+          "in",
+          "    Tipos"
+        ]
+      }
+    }
+  ],
+  "measures": [
+    {
+      "name": "Préstamos de Dispositivos",
+      "expression": "COUNTROWS ( PrestamosDispositivos )",
+      "formatString": "#,0",
+      "lineageTag": "e086f9b3-0f97-576e-b90a-d1e2769e5c25"
+    },
+    {
+      "name": "Préstamos de Dispositivos Activos",
+      "expression": "CALCULATE ( COUNTROWS ( PrestamosDispositivos ), PrestamosDispositivos[Estado] = \"Activo\" )",
+      "formatString": "#,0",
+      "lineageTag": "e418e397-aefb-5e17-b0b0-aaa6e1562ac6"
+    }
+  ]
+}

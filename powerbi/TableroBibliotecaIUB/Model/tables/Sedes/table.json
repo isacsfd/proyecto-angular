@@ -1,0 +1,29 @@
+{
+  "name": "Sedes",
+  "lineageTag": "b3fb0dea-b90a-512f-bbb1-af7c4de6fcb8",
+  "columns": [
+    {
+      "name": "Sede",
+      "dataType": "string",
+      "sourceColumn": "Sede",
+      "lineageTag": "bf5f3295-d218-5b18-ac97-6f7aea2abe04",
+      "summarizeBy": "none"
+    }
+  ],
+  "partitions": [
+    {
+      "name": "Sedes-7ad6655a-fad5-5ac7-9b1b-c3e5210a930b",
+      "mode": "import",
+      "source": {
+        "type": "m",
+        "expression": [
+          "let",
+          "    Origen = #table(type table [Sede = text], {{\"Soledad\"}, {\"Barranquilla\"}, {\"Colsamiro\"}})",
+          "in",
+          "    Origen"
+        ]
+      }
+    }
+  ],
+  "measures": []
+}

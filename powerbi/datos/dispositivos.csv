@@ -1,0 +1,19 @@
+ID,Tipo,Marca,Modelo,Sede,Estado,Alta
+18,Tablet,Samsung,Tab A9,Barranquilla,Disponible,2026-07-24
+17,Tablet,Samsung,Tab A9,Barranquilla,Prestado,2026-07-17
+16,Tablet,Samsung,Tab A9,Barranquilla,Disponible,2026-07-17
+15,Tablet,Samsung,Galaxy Tab S6,Colsamiro,Disponible,2025-07-24
+14,Tablet,Samsung,Galaxy Tab S9,Colsamiro,Disponible,2025-07-24
+13,Tablet,Samsung,Galaxy Tab S8,Colsamiro,Disponible,2025-07-24
+12,Tablet,Samsung,Galaxy Tab S7,Colsamiro,Disponible,2025-07-24
+11,Tablet,Samsung,Galaxy Tab S6,Colsamiro,Disponible,2025-07-24
+10,Computador,HP,EliteDesk 805,Barranquilla,Disponible,2025-07-24
+9,Computador,HP,EliteDesk 804,Barranquilla,Disponible,2025-07-24
+8,Computador,HP,EliteDesk 803,Barranquilla,Disponible,2025-07-24
+7,Computador,HP,EliteDesk 802,Barranquilla,Disponible,2025-07-24
+6,Computador,HP,EliteDesk 801,Barranquilla,Disponible,2025-07-24
+5,Computador,Dell,OptiPlex 7005,Soledad,Disponible,2025-07-24
+4,Computador,Dell,OptiPlex 7004,Soledad,Dañado,2025-07-24
+3,Computador,Dell,OptiPlex 7003,Soledad,Dañado,2025-07-24
+2,Computador,Dell,OptiPlex 7002,Soledad,Dañado,2025-07-24
+1,Computador,Dell,OptiPlex 7001,Soledad,En Mantenimiento,2025-07-24

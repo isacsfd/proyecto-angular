@@ -1,0 +1,49 @@
+{
+  "name": "a354447470fd5ff887f795",
+  "layouts": [
+    {
+      "id": 0,
+      "position": {
+        "x": 1024,
+        "y": 88,
+        "z": 7000,
+        "width": 244,
+        "height": 92
+      }
+    }
+  ],
+  "singleVisual": {
+    "visualType": "card",
+    "projections": {
+      "Values": [
+        {
+          "queryRef": "Ingresos.Ingresos Registrados"
+        }
+      ]
+    },
+    "prototypeQuery": {
+      "Version": 2,
+      "From": [
+        {
+          "Name": "t0",
+          "Entity": "Ingresos",
+          "Type": 0
+        }
+      ],
+      "Select": [
+        {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Source": "t0"
+              }
+            },
+            "Property": "Ingresos Registrados"
+          },
+          "Name": "Ingresos.Ingresos Registrados"
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}
